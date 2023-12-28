@@ -2,13 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
-const randomWords = [
-  'groggily', 'degraded', 'acts', 'fraying', 'submersed', 'shrill',
-  'upbeat', 'underling', 'property', 'railing', 'wikipedia', 'empathic',
-  'trim', 'man', 'slap', 'noise', 'pin', 'data',
-  'thanks', 'rich', 'behave', 'scared', 'grade', 'power',
-  'mass', 'smooth', 'ruin'
-];
+import usePokemonNames from '@/hooks/usePokemonNames';
 
 const debounce = (f, delay = 1000) => {
   let timeout;
@@ -19,11 +13,13 @@ const debounce = (f, delay = 1000) => {
 };
 
 export default function Home() {
+  const { data: pokemonNames = [] } = usePokemonNames();
+
   const [value, setValue] = useState('');
   const [filteredValues, setFilteredValues] = useState([]);
 
   const filterValues = useMemo(() => debounce((searchString) => {
-    const filteredValues = randomWords.filter((s) => s.includes(searchString));
+    const filteredValues = pokemonNames.filter((s) => s.includes(searchString));
 
     setFilteredValues(filteredValues);
   }), []);
