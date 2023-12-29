@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "app/**/*.js",
+    "app/**/*.jsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "hooks/**/*.js",
+    "hooks/**/*.jsx",
+    "hooks/**/*.ts",
+    "hooks/**/*.tsx",
+    "types/**/*.js",
+    "types/**/*.tsx",
+    "types/**/*.jsx",
+    "types/**/*.ts",
+    "libs/**/*.js",
+    "libs/**/*.jsx",
+    "libs/**/*.ts",
+    "libs/**/*.tsx",
+    "utils/**/*.jsx",
+    "utils/**/*.js",
+    "utils/**/*.ts",
+    "utils/**/*.tsx",
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

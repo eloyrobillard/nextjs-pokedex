@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 
 import prismadb from '@/libs/prismadb.ts';
 
-export async function GET(_req: Request) {
+export async function GET() {
   try {
-    const pokemon = await prismadb.pokemon.findMany();
+    const pokemonNames = await prismadb.pokemon.findMany({ select: { name: true } });
 
-    return NextResponse.json(pokemon);
+    return NextResponse.json(pokemonNames.map(({ name }) => name));
   } catch (error) {
     return NextResponse.json({ message: 'Internal server error' });
   }
