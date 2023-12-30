@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 import { Type } from '@sinclair/typebox';
+import { Pokemon } from '@/type-builders/pokemon.ts';
 
 // ===================
 // POKEMON
@@ -16,7 +16,7 @@ const PokemonBatch = TypeCompiler.Compile(Type.Object({
 
 const parsePokemonBatch = (input: unknown) => (PokemonBatch.Check(input) ? input : null);
 
-const getPokemons = async (count: number): Promise<{ name: string, url: string }[]> => {
+export const getPokemons = async (count: number): Promise<{ name: string, url: string }[]> => {
   const pokemons = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${count}`)
     .then(res => res.json())
     .then(data => parsePokemonBatch(data));
@@ -24,33 +24,37 @@ const getPokemons = async (count: number): Promise<{ name: string, url: string }
   return pokemons?.results ?? [];
 };
 
-// ===================
-// PRISMA
-// ===================
+export async function populateWithFullPokemon(step: number) {
+  for (let i = 0; i < 1302; i += step) {
+    const pokemonNames = await fetcher(`https://pokeapi.co/api/v2/pokemon?limit=${step}&offset=${step}`)
+      .then(({ results }) => results.map(({ name }: { name: string }) => name));
 
-const prisma = new PrismaClient();
+    const pokemonList = await Promise.all(
+      pokemonNames.map((name: string) => fetcher(`https://pokeapi.co/api/v2/pokemon/${name}`)),
+    );
 
-async function main() {
-  const count = await prisma.pokemon.count();
+    await Promise.all(pokemonList.map(p => {
+      if (Pokemon.Check(p)) {
+        // supabase ポケモンに変換
+        const pokemon: PokemonType = {
+          id: p.id,
+          name: p.name,
+          base_experience: p.base_experience,
+          height: p.height,
+          is_default: p.is_default,
+          order: p.order,
+          weight: p.weight,
+          sprite: p.sprites.front_default,
+          type1: p.types[0]?.type.name || '',
+          type2: p.types[1]?.type.name || '',
+        };
 
-  // populate DB if first time or empty
-  if (count === 0) {
-    // 27/12/23: current number of pokemon entries is 1302
-    // so it should take a few more decades to reach 2000
-    const MAX_COUNT_WITH_LEEWAY = 2000;
+        return prismadb.pokemon.create({ data: pokemon });
+      }
 
-    const allPokemon = await getPokemons(MAX_COUNT_WITH_LEEWAY);
+      return prismadb.pokemon.findUnique({ where: { name: '' } });
+    }));
 
-    await prisma.pokemon.createMany({ data: allPokemon });
+    await sleep(10000);
   }
 }
-
-main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (e: unknown) => {
-    console.error(e);
-    await prisma.$disconnect();
-    process.exit(1);
-  });

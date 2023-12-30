@@ -8,6 +8,7 @@ export async function GET() {
 
     return NextResponse.json(pokemonNames.map(({ name }) => name));
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ message: 'Internal server error' });
   }
 }

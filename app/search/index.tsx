@@ -6,18 +6,18 @@ import { debounce } from '@/utils/debounce.ts';
 import { Pokemon } from '@/types/pokemon.ts';
 
 type Props = {
-  pokemon: Pokemon[],
+  pokemonList: Pokemon[],
   setFilteredPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>
 }
 
-export default function SearchBar({ pokemon, setFilteredPokemon }: Props) {
+export default function SearchBar({ pokemonList, setFilteredPokemon }: Props) {
   const [value, setValue] = useState('');
 
   const filterPokemon = useMemo(() => debounce((searchString: string) => {
-    const filteredPokemon = pokemon.filter(({ name }) => name.includes(searchString));
+    const filteredPokemon = pokemonList.filter(({ name }) => name.includes(searchString));
 
     setFilteredPokemon(filteredPokemon);
-  }), [pokemon, setFilteredPokemon]);
+  }), [pokemonList, setFilteredPokemon]);
 
   const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
     e.preventDefault();

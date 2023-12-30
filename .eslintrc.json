@@ -52,6 +52,7 @@
       {
         "ignoreRestArgs": true
       }
-    ]
+    ],
+    "operator-linebreak": "off"
   }
 }
