@@ -14,13 +14,13 @@ export async function GET(req: Request) {
       return NextResponse.json(pokemon);
     }
 
-    const pokemonOriginal = await fetcher(`https://pokeapi.co/api/v2/pokemon/${name}`);
+    const sourcePokemonData = await fetcher(`https://pokeapi.co/api/v2/pokemon/${name}`);
 
-    if (Pokemon.Check(pokemonOriginal)) {
+    if (Pokemon.Check(sourcePokemonData)) {
       // update Supabase with full pokémon data
-      await prismadb.pokemon.update({ where: { name }, data: pokemonOriginal });
+      await prismadb.pokemon.update({ where: { name }, data: sourcePokemonData });
 
-      return NextResponse.json(pokemonOriginal);
+      return NextResponse.json(sourcePokemonData);
     }
 
     return NextResponse.json({ message: 'Pokemon parse error' });

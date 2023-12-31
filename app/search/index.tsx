@@ -27,8 +27,14 @@ export default function SearchBar({ pokemonList, setFilteredPokemon }: Props) {
   };
 
   return (
-    <div className="w-[100%] flex justify-center bg-[#81C784]">
-      <input type="text" value={value} onInput={handleInput} placeholder="Search pokémon..." className="text-black w-[30vw] h-[5vh] p-2" />
-    </div>
+    <nav className='w-[100%] sticky top-0 flex justify-center bg-[#81C784] drop-shadow-md'>
+      <input
+        type='text'
+        value={value}
+        onInput={handleInput}
+        placeholder='Search pokémon...'
+        className='text-black w-[30vw] h-[5vh] p-2'
+      />
+    </nav>
   );
 }
