@@ -5,8 +5,8 @@ import React, { useEffect, useState } from 'react';
 import { Pokemon } from '@/types/pokemon.ts';
 import { usePokemonList } from '@/hooks/usePokemonList.ts';
 
-import SearchBar from '@/components/search.tsx';
-import Grid from '@/components/grid.tsx';
+import SearchBar from '@/components/Search.tsx';
+import Grid from '@/components/Grid.tsx';
 
 export default function Home() {
   const { data: pokemonList = [] } = usePokemonList();

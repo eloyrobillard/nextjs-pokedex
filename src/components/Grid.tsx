@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 
 import { Pokemon } from '@/types/pokemon.ts';
-import Card from '@/components/card.tsx';
+import Card from '@/components/Card.tsx';
 
 export default function Grid({ pokemonList }: { pokemonList: Pokemon[] }) {
   return (

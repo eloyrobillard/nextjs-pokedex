@@ -1,23 +1,7 @@
-import Image from 'next/image';
 import React from 'react';
 
 import { Pokemon } from '@/types/pokemon.ts';
-
-function Icon({ type }: { type: string }) {
-  return (
-    // flex used to center the type icon inside the colored div
-    <div className={`${type} h-[30px] w-[30px] flex rounded-full transition-all hover:saturate-200 hover:scale-110`}>
-      <Image
-        src={`type-icons/${type}.svg`}
-        alt={type}
-        title={type}
-        width={30 * 0.6}
-        height={30 * 0.6}
-        className='m-[20%]'
-      />
-    </div>
-  );
-}
+import Icon from '@/components/Icon.tsx';
 
 export default function Card({ pokemon }: { pokemon: Pokemon }) {
   const { id, name: n, sprite, type1, type2 } = pokemon;
