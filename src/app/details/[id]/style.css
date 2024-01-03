@@ -1,3 +1,11 @@
-.rotateY-3d-left {
-  /* transform: rotate3d(360, 120, -90, 60deg) rotateZ(-30deg); */
+.rotateY-counterclockwise {
+  transform: rotateY(30deg);
+}
+
+.rotateY-clockwise {
+  transform: rotateY(-30deg);
+}
+
+.perspective {
+  perspective: 400px;
 }

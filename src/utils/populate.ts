@@ -1,6 +1,7 @@
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 import { Type } from '@sinclair/typebox';
-import { Pokemon } from '@/type-builders/pokemon.ts';
+import { Pokemon as PokemonBuilder } from '@/type-builders/pokemon.ts';
+import { PokemonV2 } from '@/types/pokemon.ts';
 
 // ===================
 // POKEMON
@@ -34,16 +35,18 @@ export async function populateWithFullPokemon(step: number) {
     );
 
     await Promise.all(pokemonList.map(p => {
-      if (Pokemon.Check(p)) {
+      if (PokemonBuilder.Check(p)) {
         // supabase ポケモンに変換
-        const pokemon: PokemonType = {
+        const pokemon: PokemonV2 = {
           id: p.id,
+          abilities: p.abilities.map(({ability}) => ability.name),
           name: p.name,
           base_experience: p.base_experience,
           height: p.height,
           is_default: p.is_default,
           order: p.order,
           weight: p.weight,
+          stats: p.stats,
           sprite: p.sprites.front_default,
           type1: p.types[0]?.type.name || '',
           type2: p.types[1]?.type.name || '',
