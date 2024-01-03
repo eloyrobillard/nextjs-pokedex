@@ -17,7 +17,7 @@ export default function LongIcon({ type }: { type: string }) {
       hover:scale-110`}
     >
       {/* Capitalize type */}
-      <span className='leading-6 text-white font-medium'>{type.replace(/\b\w/, c => c.toUpperCase())}</span>
+      <span className='leading-6 text-white font-medium capitalize'>{type}</span>
       <Image
         src={`/type-icons/${type}.svg`}
         alt={type}

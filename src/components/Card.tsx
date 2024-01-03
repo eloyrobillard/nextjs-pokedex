@@ -16,8 +16,8 @@ export default function Card({ pokemon }: { pokemon: Pokemon }) {
         <div className='basis-20'>
           <p className='text-gray-600'>{id}</p>
           {/* Capitalize first letter of name */}
-          <p className='text-gray-500'>{name?.replace(/\b\w/, c => c.toUpperCase())}</p>
-          <p className='text-gray-300 text-xs'>{extensions.join(' ')}</p>
+          <p className='text-gray-500 capitalize'>{name}</p>
+          <p className='text-gray-300 text-xs capitalize'>{extensions.join(' ')}</p>
         </div>
         <div className='flex flex-col justify-between'>
           <Icon type={type1} />

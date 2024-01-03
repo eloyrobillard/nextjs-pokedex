@@ -54,7 +54,7 @@ function Details({ params }: { params: { id: string } }) {
           </div>
         </div>
         <div className='h-[90%] text-center flex flex-col '>
-          <h1>{pokemon.name}</h1>
+          <h1 className='capitalize'>{pokemon.name}</h1>
           <img src={pokemon.sprite} alt={pokemon.name} className='m-auto h-[35vh]' />
         </div>
         <div className='perspective'>
