@@ -11,7 +11,7 @@ function Details({ params }: { params: { id: string } }) {
   const { pokemon, error, isLoading } = usePokemon(params.id);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className='h-[100vh] cursor-wait'>Loading...</div>;
   }
 
   if (error) {
