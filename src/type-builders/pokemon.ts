@@ -24,3 +24,16 @@ export const Pokemon = TypeCompiler.Compile(Type.Object({
   })),
   weight: Type.Number(),
 }));
+
+export const PokemonSpecies = TypeCompiler.Compile(Type.Object({
+  genera: Type.Array(Type.Object({
+    genus: Type.String(),
+    language: Type.Object({ name: Type.String() }),
+  })),
+  id: Type.Number(),
+  name: Type.String(),
+  names: Type.Array(Type.Object({
+    name: Type.String(),
+    language: Type.Object({ name: Type.String() }),
+  })),
+}));

@@ -11,14 +11,51 @@ datasource db {
 }
 
 model Pokemon {
-  id              Int     @id
-  name            String  @unique
-  base_experience Int     @default(0)
-  height          Int     @default(0)
-  is_default      Boolean @default(true)
-  order           Int     @default(0)
-  weight          Int     @default(0)
-  sprite          String  @default("")
-  type1           String  @default("")
-  type2           String?
+  id             Int      @id
+  abilites       String[]
+  baseExperience Int      @default(0)
+  forms          Form[]
+  genera         Genus[]
+  height         Int      @default(0)
+  isDefault      Boolean  @default(true)
+  name           String   @unique
+  names          Name[]
+  order          Int      @default(0)
+  stats          Stat[]
+  sprite         String   @default("")
+  type1          String   @default("")
+  type2          String?
+  weight         Int      @default(0)
+}
+
+model Form {
+  id        Int     @id @default(autoincrement())
+  pokemonId Int
+  name      String
+  url       String
+  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+}
+
+model Genus {
+  id        Int     @id @default(autoincrement())
+  pokemonId Int
+  genus     String
+  language  String
+  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+}
+
+model Name {
+  id        Int     @id @default(autoincrement())
+  pokemonId Int
+  name      String
+  language  String
+  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+}
+
+model Stat {
+  baseStat  Int
+  effort    Int
+  name      String  @unique
+  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+  pokemonId Int
 }
