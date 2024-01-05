@@ -12,6 +12,7 @@ export const Pokemon = TypeCompiler.Compile(Type.Object({
   is_default: Type.Boolean(),
   name: Type.String(),
   order: Type.Number(),
+  species: Type.Object({ name: Type.String(), url: Type.String() }),
   sprites: Type.Object({ front_default: Type.String() }),
   stats: Type.Array(Type.Object({
     base_stat: Type.Number(), effort: Type.Number(), stat: Type.Object({ name: Type.String() }),

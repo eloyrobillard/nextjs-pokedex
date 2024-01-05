@@ -1,5 +1,6 @@
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 import { Type } from '@sinclair/typebox';
+
 import { Pokemon as PokemonBuilder, PokemonSpecies } from '@/type-builders/pokemon.ts';
 import fetcher from '@/libs/fetcher.ts';
 import { sleep } from '@/utils/sleep.ts';
@@ -27,74 +28,84 @@ export const getPokemons = async (count: number): Promise<{ name: string, url: s
   return pokemons?.results ?? [];
 };
 
+/**
+ * Replace current DB data with entirely new data from the PokéAPI.
+ * Specify a step to limit the number of 'pokemon'
+ * and 'pokemon-species' queries performed at any given time.
+ */
 export async function populateWithFullPokemonDetails(step: number) {
-  const TOTAL_POKEMON = 1302;
+  // just in case the source gets updated with more than the current 1302 pokémon entries
+  const ALL_POKEMON_WITH_LEEWAY = 2000;
 
-  // reset DB
+  // empty the pokémon table
   prismadb.pokemon.deleteMany();
 
+  const pokemonURLs = await fetcher(`https://pokeapi.co/api/v2/pokemon?limit=${ALL_POKEMON_WITH_LEEWAY}`)
+    .then(({ results }) => results.map(({ url }: { url: string }) => url));
+
+  if (!Array.isArray(pokemonURLs)) {
+    return [];
+  }
+
   /* eslint-disable no-await-in-loop */
-  for (let i = 0; i < TOTAL_POKEMON; i += step) {
-    const pokemonNames = await fetcher(`https://pokeapi.co/api/v2/pokemon?limit=${step}&offset=${i}`)
-      .then(({ results }) => results.map(({ name }: { name: string }) => name));
-    console.log(pokemonNames);
-    // return [pokemon, pokemonSpecies] tuples
-    const pokemonList = await Promise.all(
-      pokemonNames.map((name: string) => Promise.all([
-        fetcher(`https://pokeapi.co/api/v2/pokemon/${name}`),
-        fetcher(`https://pokeapi.co/api/v2/pokemon-species/${name}`)])),
-    );
+  for (let i = 0; i < pokemonURLs.length; i += step) {
+    const pokemonEntries = (await Promise.all(
+      pokemonURLs.slice(i, i + step).map(fetcher),
+    )).filter(PokemonBuilder.Check);
 
-    await Promise.all(pokemonList.map(([p, s]) => {
-      if (PokemonBuilder.Check(p) && PokemonSpecies.Check(s)) {
-        // convert to supabase form
-        const pokemon = {
-          id: p.id,
-          abilities: p.abilities.map(({ ability }) => ability.name),
-          baseExperience: p.base_experience,
-          // forms: ,
-          // genera: ,
-          height: p.height,
-          isDefault: p.is_default,
-          name: p.name,
-          order: p.order,
-          sprite: p.sprites.front_default,
-          // stats: ,
-          type1: p.types[0]?.type.name || '',
-          type2: p.types[1]?.type.name || '',
-          weight: p.weight,
-        };
+    // promise returns [pokemon, pokemonSpecies] tuples
+    const pokemonAndSpeciesTuples = (
+      await Promise.all(
+        pokemonEntries.map(p => fetcher(p.species.url)
+          .then(s => (PokemonSpecies.Check(s) ? [p, s] as const : []))),
+      )
+    ).filter(Boolean);
 
-        return [
-          prismadb.pokemon.create({ data: pokemon }),
-          prismadb.form.createMany({
-            data: p.forms.map(({ name, url }) => ({
-              pokemonId: p.id, name, url,
-            })),
-          }),
-          prismadb.genus.createMany({
-            data: s.genera.map(({ genus, language: { name } }) => ({
-              pokemonId: p.id, genus, language: name,
-            })),
-          }),
-          prismadb.name.createMany({
-            data: s.names.map(({ name, language }) => ({
-              pokemonId: p.id, name, language: language.name,
-            })),
-          }),
-          prismadb.stat.createMany({
-            data: p.stats.map(({ base_stat: baseStat, effort, stat: { name } }) => ({
-              pokemonId: p.id, baseStat, effort, name,
-            })),
-          }),
-        ];
-      }
+    await Promise.all(pokemonAndSpeciesTuples.map(([p, s]) => {
+      // convert to format used in DB
+      const pokemon = {
+        id: p.id,
+        abilities: p.abilities.map(({ ability }) => ability.name),
+        baseExperience: p.base_experience,
+        height: p.height,
+        isDefault: p.is_default,
+        name: p.name,
+        order: p.order,
+        sprite: p.sprites.front_default,
+        type1: p.types[0]?.type.name || '',
+        type2: p.types[1]?.type.name || '',
+        weight: p.weight,
+      };
 
-      return prismadb.pokemon.findUnique({ where: { name: '' } });
+      // forms, genera, names and stats are all dependent on the current pokemon
+      return [
+        prismadb.pokemon.create({ data: pokemon }),
+        prismadb.form.createMany({
+          data: p.forms.map(({ name, url }) => ({
+            pokemonId: p.id, name, url,
+          })),
+        }),
+        prismadb.genus.createMany({
+          data: s.genera.map(({ genus, language: { name } }) => ({
+            pokemonId: p.id, genus, language: name,
+          })),
+        }),
+        prismadb.name.createMany({
+          data: s.names.map(({ name, language }) => ({
+            pokemonId: p.id, name, language: language.name,
+          })),
+        }),
+        prismadb.stat.createMany({
+          data: p.stats.map(({ base_stat: baseStat, effort, stat: { name } }) => ({
+            pokemonId: p.id, baseStat, effort, name,
+          })),
+        }),
+      ];
     }));
 
     await sleep(10000);
   }
 
+  // get all (hopefully) updated pokemon entries back
   return prismadb.pokemon.findMany();
 }
