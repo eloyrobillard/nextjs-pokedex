@@ -37,8 +37,8 @@ export async function populateWithFullPokemonDetails(step: number) {
   // just in case the source gets updated with more than the current 1302 pokémon entries
   const ALL_POKEMON_WITH_LEEWAY = 2000;
 
-  // empty the pokémon table
-  prismadb.pokemon.deleteMany();
+  // start from where we left off
+  const currentData = await prismadb.pokemon.findMany();
 
   const pokemonURLs = await fetcher(`https://pokeapi.co/api/v2/pokemon?limit=${ALL_POKEMON_WITH_LEEWAY}`)
     .then(({ results }) => results.map(({ url }: { url: string }) => url));
@@ -48,10 +48,12 @@ export async function populateWithFullPokemonDetails(step: number) {
   }
 
   /* eslint-disable no-await-in-loop */
-  for (let i = 0; i < pokemonURLs.length; i += step) {
+  for (let i = currentData.length; i < pokemonURLs.length; i += step) {
     const pokemonEntries = (await Promise.all(
       pokemonURLs.slice(i, i + step).map(fetcher),
-    )).filter(PokemonBuilder.Check);
+    ))
+      // make sure `this` is PokemonBuilder otherwise this fails
+      .filter(PokemonBuilder.Check.bind(PokemonBuilder));
 
     // promise returns [pokemon, pokemonSpecies] tuples
     const pokemonAndSpeciesTuples = (
@@ -78,7 +80,7 @@ export async function populateWithFullPokemonDetails(step: number) {
       };
 
       // forms, genera, names and stats are all dependent on the current pokemon
-      return [
+      return prismadb.$transaction([
         prismadb.pokemon.create({ data: pokemon }),
         prismadb.form.createMany({
           data: p.forms.map(({ name, url }) => ({
@@ -100,7 +102,7 @@ export async function populateWithFullPokemonDetails(step: number) {
             pokemonId: p.id, baseStat, effort, name,
           })),
         }),
-      ];
+      ]);
     }));
 
     await sleep(10000);

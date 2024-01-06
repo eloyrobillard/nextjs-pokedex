@@ -5,9 +5,10 @@ export type MinimalPokemon = {
 };
 
 export type Stat = {
-  pokemonId: number;
-  base_stat: number;
+  id: number
+  baseStat: number;
   name: string;
+  pokemonId: number;
 }
 
 export type Form = {

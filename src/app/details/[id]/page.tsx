@@ -44,17 +44,18 @@ function Details({ params }: { params: { id: string } }) {
                 {pokemon.weight / 10}
                 kg
               </div>
-              <div>TODO</div>
+              <div>{pokemon.abilities.join(' ')}</div>
               <div className='w-[11rem] flex justify-between'>
                 <LongIcon type={pokemon.type1} />
                 {pokemon.type2 && <LongIcon type={pokemon.type2} />}
               </div>
-              <div>TODO</div>
+              <div>{pokemon.forms.map(({ name }) => name).join(' ')}</div>
             </div>
           </div>
         </div>
         <div className='h-[90%] text-center flex flex-col '>
           <h1 className='capitalize'>{pokemon.name}</h1>
+          <div>{pokemon.genera.find(({ language }) => language.startsWith('en'))?.genus}</div>
           <img src={pokemon.sprite} alt={pokemon.name} className='m-auto h-[35vh]' />
         </div>
         <div className='perspective'>
@@ -69,13 +70,12 @@ function Details({ params }: { params: { id: string } }) {
               <div>Total</div>
             </div>
             <div className='leading-10 font-extralight'>
-              <div>TODO</div>
-              <div>TODO</div>
-              <div>TODO</div>
-              <div>TODO</div>
-              <div>TODO</div>
-              <div>TODO</div>
-              <div>TODO</div>
+              {pokemon.stats.map(({ id, baseStat }) => (
+                <div key={id}>
+                  {baseStat}
+                </div>
+              ))}
+              <div>{pokemon.stats.reduce((acc, { baseStat }) => acc + baseStat, 0)}</div>
             </div>
           </div>
         </div>

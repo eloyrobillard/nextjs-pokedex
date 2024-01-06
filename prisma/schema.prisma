@@ -12,7 +12,7 @@ datasource db {
 
 model Pokemon {
   id             Int      @id
-  abilites       String[]
+  abilities      String[]
   baseExperience Int      @default(0)
   forms          Form[]
   genera         Genus[]
@@ -39,7 +39,7 @@ model Form {
 model Genus {
   id        Int     @id @default(autoincrement())
   pokemonId Int
-  genus     String
+  genus     String  @unique
   language  String
   Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
 }
@@ -53,9 +53,10 @@ model Name {
 }
 
 model Stat {
+  id        Int     @id @default(autoincrement())
   baseStat  Int
   effort    Int
-  name      String  @unique
+  name      String
   Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
   pokemonId Int
 }

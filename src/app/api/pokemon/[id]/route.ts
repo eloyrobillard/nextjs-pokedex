@@ -6,7 +6,12 @@ export async function GET(_req: NextRequest, { params }: {params: {id: string}})
   const { id } = params;
 
   try {
-    const pokemon = await prismadb.pokemon.findUnique({ where: { id: Number(id) } });
+    const pokemon = await prismadb.pokemon.findUnique({
+      where: { id: Number(id) },
+      include: {
+        forms: true, genera: true, names: true, stats: true,
+      },
+    });
 
     return NextResponse.json(pokemon);
   } catch (error) {

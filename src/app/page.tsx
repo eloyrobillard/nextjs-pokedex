@@ -13,9 +13,9 @@ export default function Home() {
 
   const [filteredPokemon, setFilteredPokemon] = useState<Pokemon[]>([]);
 
-  // useEffect(() => {
-  //   setFilteredPokemon(pokemonList);
-  // }, [pokemonList]);
+  useEffect(() => {
+    setFilteredPokemon(pokemonList);
+  }, [pokemonList]);
 
   return (
     <div>
