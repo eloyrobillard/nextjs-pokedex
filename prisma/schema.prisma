@@ -28,6 +28,8 @@ model Pokemon {
   weight         Int      @default(0)
 }
 
+// relevant if the pokémon has a 'mega' form or specialized forms like Deoxys
+// (Pikachu has a bunch of 'regional cap' forms as well)
 model Form {
   id        Int     @id @default(autoincrement())
   pokemonId Int
@@ -36,6 +38,7 @@ model Form {
   Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
 }
 
+// flavor text like 'seed pokémon' for Bulbasaur and evolutions
 model Genus {
   id        Int     @id @default(autoincrement())
   pokemonId Int
@@ -44,6 +47,7 @@ model Genus {
   Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
 }
 
+// name of the pokémon in different languages
 model Name {
   id        Int     @id @default(autoincrement())
   pokemonId Int
@@ -52,6 +56,7 @@ model Name {
   Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
 }
 
+// base stat of the pokémon (HP, Attack, Defence, Sp. Attack, Sp. Defence, Speed)
 model Stat {
   id        Int     @id @default(autoincrement())
   baseStat  Int

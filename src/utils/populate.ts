@@ -30,8 +30,8 @@ export const getPokemons = async (count: number): Promise<{ name: string, url: s
 
 /**
  * Replace current DB data with entirely new data from the PokéAPI.
- * Specify a step to limit the number of 'pokemon'
- * and 'pokemon-species' queries performed at any given time.
+ * Specify a step to limit the number of 'pokemon' and 'pokemon-species' queries
+ * performed at any given time.
  */
 export async function populateWithFullPokemonDetails(step: number) {
   // just in case the source gets updated with more than the current 1302 pokémon entries
@@ -79,7 +79,8 @@ export async function populateWithFullPokemonDetails(step: number) {
         weight: p.weight,
       };
 
-      // forms, genera, names and stats are all dependent on the current pokemon
+      // forms, genera, names and stats are all related to the current pokemon
+      // we use a transaction to make sure all the relevant data exist together in the DB
       return prismadb.$transaction([
         prismadb.pokemon.create({ data: pokemon }),
         prismadb.form.createMany({
@@ -105,9 +106,10 @@ export async function populateWithFullPokemonDetails(step: number) {
       ]);
     }));
 
+    // wait 10 seconds
     await sleep(10000);
   }
 
-  // get all (hopefully) updated pokemon entries back
+  // get all updated pokemon entries back
   return prismadb.pokemon.findMany();
 }

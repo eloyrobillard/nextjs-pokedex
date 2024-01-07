@@ -7,8 +7,8 @@ export default function LongIcon({ type }: { type: string }) {
     <div className={`
       ${type}
       h-[30px]
-      w-[80px]
       p-1
+      mr-[10px]
       flex
       justify-between
       rounded-md
@@ -16,8 +16,7 @@ export default function LongIcon({ type }: { type: string }) {
       hover:saturate-200
       hover:scale-110`}
     >
-      {/* Capitalize type */}
-      <span className='leading-6 text-white font-medium capitalize'>{type}</span>
+      <span className='mr-2 leading-6 text-white font-medium capitalize'>{type}</span>
       <Image
         src={`/type-icons/${type}.svg`}
         alt={type}
