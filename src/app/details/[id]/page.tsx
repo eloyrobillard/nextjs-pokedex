@@ -8,6 +8,7 @@ import WithTypeColorBg from '@/components/WithTypeColorBg.tsx';
 
 // used for perspective effect
 import './style.css';
+import Gauge from '@/components/Gauge.tsx';
 
 function Details({ params }: { params: { id: string } }) {
   // request pokémon data by ID
@@ -21,8 +22,10 @@ function Details({ params }: { params: { id: string } }) {
     return <div>{error.toString()}</div>;
   }
 
+  const maxStat = Math.max(...pokemon.stats.map(({ baseStat }) => baseStat));
+
   return (
-    <div className='bg-white text-black'>
+    <div className='bg-white text-black w-[95vw]'>
       <div className='h-[100vh] grid grid-cols-3 items-center'>
         {/* various details (left side) */}
         <div className='perspective'>
@@ -102,9 +105,7 @@ function Details({ params }: { params: { id: string } }) {
             </div>
             <div className='grid grid-rows-7 items-end font-extralight'>
               {pokemon.stats.map(({ id, baseStat }) => (
-                <div key={id}>
-                  {baseStat}
-                </div>
+                <Gauge key={id} max={maxStat} stat={baseStat} />
               ))}
               {/* base stats total */}
               <div>

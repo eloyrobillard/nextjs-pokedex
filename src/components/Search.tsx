@@ -1,23 +1,13 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-
-import { debounce } from '@/utils/debounce.ts';
-import { Pokemon } from '@/types/pokemon.ts';
+import React, { useState } from 'react';
 
 type Props = {
-  pokemonList: Pokemon[],
-  setFilteredPokemon: React.Dispatch<React.SetStateAction<Pokemon[]>>
+  filterPokemon: (query: string) => void;
 }
 
-export default function SearchBar({ pokemonList, setFilteredPokemon }: Props) {
+export default function SearchBar({ filterPokemon }: Props) {
   const [value, setValue] = useState('');
-
-  const filterPokemon = useMemo(() => debounce((searchString: string) => {
-    const filteredPokemon = pokemonList.filter(({ name }) => name.includes(searchString));
-
-    setFilteredPokemon(filteredPokemon);
-  }), [pokemonList, setFilteredPokemon]);
 
   const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
     e.preventDefault();

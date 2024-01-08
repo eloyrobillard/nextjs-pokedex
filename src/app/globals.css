@@ -3,6 +3,37 @@
 @tailwind utilities;
 
 /*-------------------------------
+        Stat gauge animation
+-------------------------------*/
+
+.stat-gauge-bg {
+  background: repeating-linear-gradient(45deg, #A1CD9B, #A1CD9B 5px, #91C58A 5px, #91C58A 10px);
+  background-size: 1rem 1rem;
+}
+
+.stat-gauge-animation {
+  -webkit-animation: 1s linear 0s infinite stat-gauge-stripes;
+  animation: 1s linear infinite stat-gauge-stripes;
+}
+
+@-webkit-keyframes stat-gauge-stripes {
+  from {
+    background-position: 1rem 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+@keyframes stat-gauge-stripes {
+  from {
+    background-position: 1rem 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/*-------------------------------
         Pokémon type icons
 -------------------------------*/
 
