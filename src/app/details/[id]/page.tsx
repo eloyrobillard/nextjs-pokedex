@@ -9,6 +9,7 @@ import WithTypeColorBg from '@/components/WithTypeColorBg.tsx';
 // used for perspective effect
 import './style.css';
 import Gauge from '@/components/Gauge.tsx';
+import Image from 'next/image';
 
 function Details({ params }: { params: { id: string } }) {
   // request pokémon data by ID
@@ -26,7 +27,12 @@ function Details({ params }: { params: { id: string } }) {
 
   return (
     <div className='bg-white text-black w-[95vw]'>
-      <div className='h-[100vh] grid grid-cols-3 items-center'>
+      {/* name, genus (top side) */}
+      <div className='text-center flex flex-col justify-between'>
+        <h1 className='uppercase text-[#6d6d6d] text-5xl'>{pokemon.name}</h1>
+        <WithTypeColorBg type={pokemon.type1}>{pokemon.genera.find(({ language }) => language.startsWith('en'))?.genus}</WithTypeColorBg>
+      </div>
+      <div className='h-[80vh] grid grid-cols-3 items-center'>
         {/* various details (left side) */}
         <div className='perspective'>
           <div className='grid grid-cols-2 h-[250px] rotateY-counterclockwise hover:rotate-0 transition'>
@@ -85,12 +91,13 @@ function Details({ params }: { params: { id: string } }) {
             </div>
           </div>
         </div>
-        {/* name, genus (top side) */}
-        <div className='h-[90%] text-center flex flex-col '>
-          <h1 className='uppercase text-[#6d6d6d] text-5xl'>{pokemon.name}</h1>
-          <WithTypeColorBg type={pokemon.type1}>{pokemon.genera.find(({ language }) => language.startsWith('en'))?.genus}</WithTypeColorBg>
-          <img src={pokemon.sprite} alt={pokemon.name} className='m-auto h-[75vh]' />
-        </div>
+        <Image
+          src={`/imagesHQ/${pokemon.id.toString().padStart(3, '0')}.png`}
+          alt={pokemon.name}
+          width={250}
+          height={250}
+          className='m-auto'
+        />
         {/* pokemon stats (right side) */}
         <div className='perspective'>
           <div className='grid grid-cols-2 h-[250px] rotateY-clockwise hover:rotate-0 transition'>

@@ -14,6 +14,7 @@ export default function Gauge({ max, stat }: { max: number, stat: number }) {
           rounded-md
           text-right
           text-white
+          font-medium
           stat-gauge-bg
           stat-gauge-animation
           `}
