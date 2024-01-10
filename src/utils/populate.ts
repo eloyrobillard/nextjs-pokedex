@@ -33,7 +33,7 @@ export const getPokemons = async (count: number): Promise<{ name: string, url: s
  * Specify a step to limit the number of 'pokemon' and 'pokemon-species' queries
  * performed at any given time.
  */
-export async function populateWithFullPokemonDetails(step: number) {
+export async function populateWithPokemon(step: number) {
   // just in case the source gets updated with more than the current 1302 pokémon entries
   const ALL_POKEMON_WITH_LEEWAY = 2000;
 
@@ -112,4 +112,8 @@ export async function populateWithFullPokemonDetails(step: number) {
 
   // get all updated pokemon entries back
   return prismadb.pokemon.findMany();
+}
+
+export function populateWithMoves(step: number) {
+
 }

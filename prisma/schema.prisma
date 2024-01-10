@@ -11,35 +11,26 @@ datasource db {
 }
 
 model Pokemon {
-  id               Int            @id
-  abilities        String[]
-  baseExperience   Int
-  forms            Form[]
-  evolutionChain   EvolutionChain @relation(fields: [evolutionChainId], references: [id])
-  gameIndices      GameIndex[]
-  genera           Genus[]
-  height           Int
-  isDefault        Boolean
-  name             String         @unique
-  names            Name[]
-  order            Int
-  stats            Stat[]
-  sprite           String
-  type1            String
-  type2            String?
-  weight           Int
-  evolutionChainId Int
+  id             Int         @id
+  abilities      String[]
+  baseExperience Int
+  forms          Form[]
+  gameIndices    GameIndex[]
+  height         Int
+  isDefault      Boolean
+  moves          Move[]
+  name           String      @unique
+  names          Name[]
+  order          Int
+  species        String
+  sprite         String
+  stats          Stat[]
+  type1          String
+  type2          String?
+  weight         Int
 }
 
-model EvolutionChain {
-  id               Int       @id
-  isBaby           Boolean
-  species          String
-  evolutionDetails String?
-  evolvesTo        String
-  Pokemon          Pokemon[]
-}
-
+// pokémon index per game version
 model GameIndex {
   id        Int     @id
   version   String
@@ -47,14 +38,144 @@ model GameIndex {
   pokemonId Int
 }
 
+// name of the pokémon in different languages
+model Name {
+  id        Int     @id @default(autoincrement())
+  pokemonId Int
+  name      String  @unique
+  language  String
+  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+}
+
+// base stat of the pokémon (HP, Attack, Defence, Sp. Attack, Sp. Defence, Speed)
+model Stat {
+  id        Int     @id @default(autoincrement())
+  pokemonId Int
+  baseStat  Int
+  effort    Int
+  name      String
+  pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+}
+
+// one-to-one relation with Pokemon?
+model Species {
+  id                   Int                      @id
+  baseHappiness        Int
+  captureRate          Int
+  color                String
+  eggGroups            String[]
+  evolutionChain       EvolutionChain?
+  evolvesFromSpecies   String?
+  flavorTextEntries    SpeciesFlavorTextEntry[]
+  genderRate           Int
+  genera               Genus[]
+  generation           String
+  growthRate           String
+  habitat              String
+  hasGenderDifferences Boolean
+  hatchCounter         Int
+  isBaby               Boolean
+  isLegendary          Boolean
+  isMythical           Boolean
+  name                 String
+  names                SpeciesName[]
+  order                Int
+  pokedexNumbers       PokedexEntry[]
+  shape                String
+  varieties            Variety[]
+}
+
+// pokémon entry number per pokédex type
+model PokedexEntry {
+  id        Int     @id @default(autoincrement())
+  entry     Int
+  // national, kanto, original-johto, hoenn, original-sinnoh, extended-sinnoh, updated-johto, original-unova
+  // updated-unova, conquest-gallery, kalos-central, kalos-coastal, kalos-mountain, updated-hoenn
+  // original-alola, original-melemele, original-kalala, original-ulaula, original-poni, updated-alola
+  pokedex   String
+  species   Species @relation(fields: [speciesId], references: [id])
+  speciesId Int
+}
+
+model SpeciesFlavorTextEntry {
+  id           Int     @id @default(autoincrement())
+  flavorText   String  @unique
+  language     String
+  versionGroup String
+  species      Species @relation(fields: [speciesId], references: [id])
+  speciesId    Int
+}
+
+model SpeciesName {
+  id        Int     @id @default(autoincrement())
+  name      String  @unique
+  language  String
+  species   Species @relation(fields: [speciesId], references: [id])
+  speciesId Int
+}
+
+model Variety {
+  id        Int     @id @default(autoincrement())
+  isDefault Boolean
+  pokemon   String
+  species   Species @relation(fields: [speciesId], references: [id])
+  speciesId Int
+}
+
+// just an id for the chain, the real data is in the Chain children
+// kept it because the id is given by PokéAPI, so it's stable / meaningful
+model EvolutionChain {
+  id        Int     @id
+  chain     Chain?
+  Species   Species @relation(fields: [speciesId], references: [id])
+  speciesId Int     @unique
+}
+
+// actual contents of the evolution chain
+// example of a recursive model
+model Chain {
+  id                    Int            @id @default(autoincrement())
+  evolutionChain        EvolutionChain @relation(fields: [evolutionChainId], references: [id])
+  evolutionChainId      Int            @unique
+  evolvesTo             Chain[]        @relation("parentId")
+  isBaby                Boolean
+  Parent                Chain?         @relation("parentId", fields: [parentId], references: [id])
+  parentId              Int?
+  species               String
+  // from `evolutionDetails` field
+  // NOTE this field comes as an array from PokéAPI
+  //      so there may be chains with several `evolutionDetails` items (haven't found one thus far)
+  gender                String?
+  heldItem              String[]
+  item                  String?
+  knownMove             String?
+  knownMoveType         String?
+  location              String?
+  minAffection          Int?
+  minBeauty             Int?
+  minHappiness          Int?
+  minLevel              Int
+  needsOverworldRain    Boolean
+  partySpecies          String?
+  partyType             String?
+  relativePhysicalStats String?
+  timeOfDay             String
+  tradeSpecies          String?
+  trigger               String
+  turnUpsideDown        Boolean
+}
+
+// one of: status, physical, special
 model DamageClass {
   id           Int                      @id
   descriptions DamageClassDescription[]
   name         String
   names        DamageClassName[]
+  // moves of this damage class
   moves        Move[]
 }
 
+// damage class descriptions by language
 model DamageClassDescription {
   description   String      @unique
   language      String
@@ -70,25 +191,24 @@ model DamageClassName {
 }
 
 // relevant if the pokémon has a 'mega' form or specialized forms like Deoxys
-// (Pikachu has a bunch of 'regional cap' forms as well)
+// or Pikachu, who has a bunch of 'regional cap' forms
 model Form {
   id        Int     @id @default(autoincrement())
   pokemonId Int
   name      String  @unique
   url       String
-  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+  pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
 }
 
 // flavor text like 'seed pokémon' for Bulbasaur and evolutions
 model Genus {
-  id        Int     @id @default(autoincrement())
-  pokemonId Int
-  genus     String
-  language  String
-  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+  id       Int       @id @default(autoincrement())
+  genus    String
+  language String
+  species  Species[]
 }
 
-// move names with game version available
+// move names for game versions the move is available in
 model Move {
   id                Int               @id
   accuracy          Int
@@ -112,8 +232,8 @@ model Move {
   ailment           Ailment           @relation(fields: [ailmentId], references: [id])
   ailmentId         Int
   ailmentChance     Int
-  category          MoveCategory      @relation(fields: [moveCategoryId], references: [id])
-  moveCategoryId    Int
+  category          MoveCategory      @relation(fields: [categoryId], references: [id])
+  categoryId        Int
   critRate          Int
   drain             Int
   flinchChance      Int
@@ -123,23 +243,12 @@ model Move {
   minHits           Int?
   minTurns          Int?
   statChance        Int
+  Pokemon           Pokemon?          @relation(fields: [pokemonId], references: [id])
+  pokemonId         Int?
 }
 
-model MoveCategory {
-  descriptions MoveCategoryDescriptions[]
-  id           Int                        @id
-  moves        Move[]
-  name         String
-}
-
-model MoveCategoryDescriptions {
-  id             Int          @id @default(autoincrement())
-  description    String
-  language       String
-  moveCategory   MoveCategory @relation(fields: [moveCategoryId], references: [id])
-  moveCategoryId Int
-}
-
+// paralysis, sleep, freeze, burn, poison, confusion, infatuation, trap, nightmare, torment, disable, yawn
+// heal-block, no-type-immunity, leech-seed, embargo, perish-song, ingrain, unknown, none
 model Ailment {
   id    Int           @id
   moves String
@@ -148,6 +257,7 @@ model Ailment {
   Move  Move[]
 }
 
+// ailment name in all available languages
 model AilmentName {
   id        Int     @id @default(autoincrement())
   language  String
@@ -156,23 +266,25 @@ model AilmentName {
   ailmentId Int
 }
 
-model MoveName {
-  id       Int    @id @default(autoincrement())
-  language String
-  name     String @unique
-  move     Move   @relation(fields: [moveId], references: [id])
-  moveId   Int
+// one of: damage, ailment, net-good-stats, heal, damage+ailment, swagger, damage+lower, damage+raise
+// damage+heal, ohko (one-hit KO), whole-field-effect, field-effect, force-switch, unique
+model MoveCategory {
+  descriptions MoveCategoryDescription[]
+  id           Int                       @id
+  moves        Move[]
+  name         String
 }
 
-model FlavorTextEntry {
-  id           Int    @id @default(autoincrement())
-  flavorText   String @unique
-  language     String
-  versionGroup String
-  move         Move   @relation(fields: [moveId], references: [id])
-  moveId       Int
+// move category description in all available languages
+model MoveCategoryDescription {
+  id          Int          @id @default(autoincrement())
+  description String
+  language    String
+  category    MoveCategory @relation(fields: [categoryId], references: [id])
+  categoryId  Int
 }
 
+// explanation of the move's effect (not shown in game?)
 model EffectEntry {
   id          Int    @id @default(autoincrement())
   effect      String @unique
@@ -182,21 +294,20 @@ model EffectEntry {
   moveId      Int
 }
 
-// name of the pokémon in different languages
-model Name {
-  id        Int     @id @default(autoincrement())
-  pokemonId Int
-  name      String  @unique
-  language  String
-  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+// in-game move description, per language / game version
+model FlavorTextEntry {
+  id           Int    @id @default(autoincrement())
+  flavorText   String @unique
+  language     String
+  versionGroup String
+  move         Move   @relation(fields: [moveId], references: [id])
+  moveId       Int
 }
 
-// base stat of the pokémon (HP, Attack, Defence, Sp. Attack, Sp. Defence, Speed)
-model Stat {
-  id        Int     @id @default(autoincrement())
-  pokemonId Int
-  baseStat  Int
-  effort    Int
-  name      String
-  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+model MoveName {
+  id       Int    @id @default(autoincrement())
+  language String
+  name     String @unique
+  move     Move   @relation(fields: [moveId], references: [id])
+  moveId   Int
 }
