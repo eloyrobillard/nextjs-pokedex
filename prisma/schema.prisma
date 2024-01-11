@@ -33,28 +33,28 @@ model Pokemon {
 // pokémon index per game version
 model GameIndex {
   id        Int     @id
-  version   String
   Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
   pokemonId Int
+  version   String
 }
 
 // name of the pokémon in different languages
 model Name {
   id        Int     @id @default(autoincrement())
-  pokemonId Int
   name      String  @unique
   language  String
   Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+  pokemonId Int
 }
 
 // base stat of the pokémon (HP, Attack, Defence, Sp. Attack, Sp. Defence, Speed)
 model Stat {
   id        Int     @id @default(autoincrement())
-  pokemonId Int
   baseStat  Int
   effort    Int
   name      String
-  pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+  pokemonId Int
 }
 
 // one-to-one relation with Pokemon?
@@ -93,7 +93,7 @@ model PokedexEntry {
   // updated-unova, conquest-gallery, kalos-central, kalos-coastal, kalos-mountain, updated-hoenn
   // original-alola, original-melemele, original-kalala, original-ulaula, original-poni, updated-alola
   pokedex   String
-  species   Species @relation(fields: [speciesId], references: [id])
+  Species   Species @relation(fields: [speciesId], references: [id])
   speciesId Int
 }
 
@@ -102,7 +102,7 @@ model SpeciesFlavorTextEntry {
   flavorText   String  @unique
   language     String
   versionGroup String
-  species      Species @relation(fields: [speciesId], references: [id])
+  Species      Species @relation(fields: [speciesId], references: [id])
   speciesId    Int
 }
 
@@ -110,7 +110,7 @@ model SpeciesName {
   id        Int     @id @default(autoincrement())
   name      String  @unique
   language  String
-  species   Species @relation(fields: [speciesId], references: [id])
+  Species   Species @relation(fields: [speciesId], references: [id])
   speciesId Int
 }
 
@@ -118,7 +118,7 @@ model Variety {
   id        Int     @id @default(autoincrement())
   isDefault Boolean
   pokemon   String
-  species   Species @relation(fields: [speciesId], references: [id])
+  Species   Species @relation(fields: [speciesId], references: [id])
   speciesId Int
 }
 
@@ -179,14 +179,14 @@ model DamageClass {
 model DamageClassDescription {
   description   String      @unique
   language      String
-  damageClass   DamageClass @relation(fields: [damageClassId], references: [id])
+  DamageClass   DamageClass @relation(fields: [damageClassId], references: [id])
   damageClassId Int
 }
 
 model DamageClassName {
   language      String
   name          String      @unique
-  damageClass   DamageClass @relation(fields: [damageClassId], references: [id])
+  DamageClass   DamageClass @relation(fields: [damageClassId], references: [id])
   damageClassId Int
 }
 
@@ -197,7 +197,7 @@ model Form {
   pokemonId Int
   name      String  @unique
   url       String
-  pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
 }
 
 // flavor text like 'seed pokémon' for Bulbasaur and evolutions
@@ -205,34 +205,34 @@ model Genus {
   id       Int       @id @default(autoincrement())
   genus    String
   language String
-  species  Species[]
+  Species  Species[]
 }
 
 // move names for game versions the move is available in
 model Move {
   id                Int               @id
   accuracy          Int
-  damageClass       DamageClass       @relation(fields: [damageClassId], references: [id])
+  DamageClass       DamageClass       @relation(fields: [damageClassId], references: [id])
   damageClassId     Int
   effectChance      Int
   effectEntries     EffectEntry[]
   flavorTextEntries FlavorTextEntry[]
   generation        String
   learnedByPokemon  String[]
-  levelLearnedAt    Int
-  language          String
+  machines          Machine[]
   name              String            @unique
   names             MoveName[]
+  Pokemons          Pokemon[]
   power             Int
   pp                Int
   priority          Int
   target            String
   type              String
   // move meta
-  ailment           Ailment           @relation(fields: [ailmentId], references: [id])
+  Ailment           Ailment           @relation(fields: [ailmentId], references: [id])
   ailmentId         Int
   ailmentChance     Int
-  category          MoveCategory      @relation(fields: [categoryId], references: [id])
+  Category          MoveCategory      @relation(fields: [categoryId], references: [id])
   categoryId        Int
   critRate          Int
   drain             Int
@@ -243,8 +243,6 @@ model Move {
   minHits           Int?
   minTurns          Int?
   statChance        Int
-  Pokemon           Pokemon?          @relation(fields: [pokemonId], references: [id])
-  pokemonId         Int?
 }
 
 // paralysis, sleep, freeze, burn, poison, confusion, infatuation, trap, nightmare, torment, disable, yawn
@@ -262,8 +260,17 @@ model AilmentName {
   id        Int     @id @default(autoincrement())
   language  String
   name      String
-  ailment   Ailment @relation(fields: [ailmentId], references: [id])
+  Ailment   Ailment @relation(fields: [ailmentId], references: [id])
   ailmentId Int
+}
+
+model Machine {
+  id           Int    @id
+  item         String @unique
+  moveName     String
+  Move         Move   @relation(fields: [moveId], references: [id])
+  moveId       Int
+  versionGroup String
 }
 
 // one of: damage, ailment, net-good-stats, heal, damage+ailment, swagger, damage+lower, damage+raise
@@ -280,7 +287,7 @@ model MoveCategoryDescription {
   id          Int          @id @default(autoincrement())
   description String
   language    String
-  category    MoveCategory @relation(fields: [categoryId], references: [id])
+  Category    MoveCategory @relation(fields: [categoryId], references: [id])
   categoryId  Int
 }
 
@@ -290,7 +297,7 @@ model EffectEntry {
   effect      String @unique
   language    String
   shortEffect String
-  move        Move   @relation(fields: [moveId], references: [id])
+  Move        Move   @relation(fields: [moveId], references: [id])
   moveId      Int
 }
 
@@ -299,15 +306,15 @@ model FlavorTextEntry {
   id           Int    @id @default(autoincrement())
   flavorText   String @unique
   language     String
-  versionGroup String
-  move         Move   @relation(fields: [moveId], references: [id])
+  Move         Move   @relation(fields: [moveId], references: [id])
   moveId       Int
+  versionGroup String
 }
 
 model MoveName {
   id       Int    @id @default(autoincrement())
   language String
   name     String @unique
-  move     Move   @relation(fields: [moveId], references: [id])
+  Move     Move   @relation(fields: [moveId], references: [id])
   moveId   Int
 }
