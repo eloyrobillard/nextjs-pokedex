@@ -1,41 +1,23 @@
-'use client';
+import React, { Suspense } from 'react';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import Search from '@/app/components/Search.tsx';
+import Grid from '@/app/components/Grid.tsx';
 
-import { Pokemon } from '@/types/pokemon.ts';
-import { usePokemonList } from '@/hooks/usePokemonList.ts';
-import { debounce } from '@/utils/debounce.ts';
-
-import SearchBar from '@/components/Search.tsx';
-import Grid from '@/components/Grid.tsx';
-
-export default function Home() {
-  const { data: pokemonList = [], error, isLoading } = usePokemonList();
-
-  const [filteredPokemon, setFilteredPokemon] = useState<Pokemon[]>([]);
-
-  const filterPokemon = useMemo(() => debounce((searchString: string) => {
-    const filtered = pokemonList.filter(({ name }) => name.includes(searchString));
-
-    setFilteredPokemon(filtered);
-  }), [pokemonList, setFilteredPokemon]);
-
-  useEffect(() => {
-    setFilteredPokemon(pokemonList);
-  }, [pokemonList]);
-
-  if (isLoading) {
-    return <div className='h-[100vh] cursor-wait'>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>{error.toString()}</div>;
-  }
+export default function Home({ searchParams }: {
+  searchParams?: {
+    query?: string;
+  };
+}) {
+  const query = searchParams?.query || '';
 
   return (
     <div>
-      <SearchBar filterPokemon={filterPokemon} />
-      <Grid pokemonList={filteredPokemon} />
+      <Search />
+      <Suspense key={query} fallback={<div>Loading...</div>}>
+        <Grid query={query} />
+      </Suspense>
     </div>
   );
 }
+
+Home.defaultProps = { searchParams: {} };

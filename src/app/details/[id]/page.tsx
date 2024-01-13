@@ -1,26 +1,33 @@
-'use client';
-
 import React from 'react';
+import Image from 'next/image';
 
-import { usePokemon } from '@/hooks/usePokemon.ts';
 import LongIcon from '@/components/LongIcon.tsx';
 import WithTypeColorBg from '@/components/WithTypeColorBg.tsx';
+import Gauge from '@/app/components/Gauge.tsx';
 
 // used for perspective effect
 import './style.css';
-import Gauge from '@/components/Gauge.tsx';
-import Image from 'next/image';
 
-function Details({ params }: { params: { id: string } }) {
-  // request pokémon data by ID
-  const { pokemon, error, isLoading } = usePokemon(params.id);
+async function Details({ params }: { params: { id: string } }) {
+  // request pokémon + species data by ID
+  const pokemon = await prismadb.pokemon.findUnique({
+    where: { id: Number(params.id) },
+    include: {
+      forms: true, stats: true,
+    },
+  });
 
-  if (isLoading) {
-    return <div className='h-[100vh] cursor-wait'>Loading...</div>;
+  if (pokemon === null) {
+    return <div>Missing pokémon data</div>;
   }
 
-  if (error) {
-    return <div>{error.toString()}</div>;
+  const species = await prismadb.species.findUnique({
+    where: { id: pokemon.id },
+    include: { genera: true },
+  });
+
+  if (species === null) {
+    return <div>Missing species data</div>;
   }
 
   const maxStat = Math.max(...pokemon.stats.map(({ baseStat }) => baseStat));
@@ -30,7 +37,7 @@ function Details({ params }: { params: { id: string } }) {
       {/* name, genus (top side) */}
       <div className='text-center flex flex-col justify-between'>
         <h1 className='uppercase text-[#6d6d6d] text-5xl'>{pokemon.name}</h1>
-        <WithTypeColorBg type={pokemon.type1}>{pokemon.genera.find(({ language }) => language.startsWith('en'))?.genus}</WithTypeColorBg>
+        <WithTypeColorBg type={pokemon.type1}>{species.genera.find(({ language }) => language.startsWith('en'))?.genus}</WithTypeColorBg>
       </div>
       <div className='h-[80vh] grid grid-cols-3 items-center'>
         {/* various details (left side) */}

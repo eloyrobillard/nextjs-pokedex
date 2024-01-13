@@ -1,32 +1,21 @@
-import { TypeCompiler } from '@sinclair/typebox/compiler';
-import { Type } from '@sinclair/typebox';
-
-import { Move as MoveParser, Pokemon as PokemonParser, PokemonSpecies } from '@/type-builders/pokemon.ts';
+import { Pokemon as PokemonParser } from '@/type-builders/pokemon.ts';
 import fetcher from '@/libs/fetcher.ts';
 import { sleep } from '@/utils/sleep.ts';
 import prismadb from '@/libs/prismadb.ts';
-import { Move, PokemonV2 } from '@/types/pokemon.ts';
+import { Move, PokemonV2, Species } from '@/types/pokemon.ts';
+import { TypeParser } from '@/type-builders/type.ts';
+import { PokemonType } from '@/types/type.ts';
+import { Species as SpeciesParser } from '@/type-builders/species.ts';
+import { Move as MoveParser } from '@/type-builders/move.ts';
 
 // ===================
 // POKEMON
 // ===================
 
-const PokemonBatch = TypeCompiler.Compile(Type.Object({
-  count: Type.Number(),
-  results: Type.Array(Type.Object({
-    name: Type.String(),
-    url: Type.String(),
-  })),
-}));
+const parseIdFromUrl = (url: string) => {
+  const matches = url.match(/(\d+)\/?$/);
 
-const parsePokemonBatch = (input: unknown) => (PokemonBatch.Check(input) ? input : null);
-
-export const getPokemons = async (count: number): Promise<{ name: string, url: string }[]> => {
-  const pokemons = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${count}`)
-    .then(res => res.json())
-    .then(data => parsePokemonBatch(data));
-
-  return pokemons?.results ?? [];
+  return matches ? matches[1] : null;
 };
 
 /**
@@ -38,8 +27,6 @@ export const getPokemons = async (count: number): Promise<{ name: string, url: s
  * in the future.
  */
 export async function populateWithPokemon(step: number, maxEntries: number) {
-  // just in case the source gets updated with more than the current 1302 pokémon entries
-
   // start from where we left off
   const currentData = await prismadb.pokemon.findMany();
 
@@ -62,9 +49,9 @@ export async function populateWithPokemon(step: number, maxEntries: number) {
     const pokemonAndSpeciesTuples = (
       await Promise.all(
         pokemonEntries.map(p => fetcher(p.species.url)
-          .then(s => (PokemonSpecies.Check(s) ? [p, s] as const : []))),
+          .then(s => (SpeciesParser.Check(s) ? [p, s] as const : []))),
       )
-    ).filter(Boolean);
+    );
 
     await Promise.all(pokemonAndSpeciesTuples.map(([p, s]) => {
       // convert to format used in DB
@@ -83,6 +70,28 @@ export async function populateWithPokemon(step: number, maxEntries: number) {
         weight: p.weight,
       };
 
+      const species: Species = {
+        id: s.id,
+        baseHappiness: s.base_happiness,
+        captureRate: s.capture_rate,
+        color: s.color.name,
+        eggGroups: s.egg_groups.map(({ name }) => name),
+        evolutionChainId: +(parseIdFromUrl(s.evolution_chain.url) || 0),
+        evolvesFromSpecies: s.evolves_from_species?.name || null,
+        genderRate: s.gender_rate,
+        generation: s.generation.name,
+        growthRate: s.growth_rate.name,
+        habitat: s.habitat.name,
+        hasGenderDifferences: s.has_gender_differences,
+        hatchCounter: s.hatch_counter,
+        isBaby: s.is_baby,
+        isLegendary: s.is_legendary,
+        isMythical: s.is_mythical,
+        name: s.name,
+        order: s.order,
+        shape: s.shape.name,
+      };
+
       // forms, genera, names and stats are all related to the current pokemon
       // we use a transaction to make sure all the relevant data exist together in the DB
       return prismadb.$transaction([
@@ -92,19 +101,40 @@ export async function populateWithPokemon(step: number, maxEntries: number) {
             pokemonId: p.id, name, url,
           })),
         }),
-        prismadb.genus.createMany({
-          data: s.genera.map(({ genus, language: { name } }) => ({
-            pokemonId: p.id, genus, language: name,
-          })),
-        }),
-        prismadb.name.createMany({
-          data: s.names.map(({ name, language }) => ({
-            pokemonId: p.id, name, language: language.name,
+        prismadb.gameIndex.createMany({
+          data: p.game_indices.map(({ game_index: gameIndex, version }) => ({
+            pokemonId: p.id, gameIndex, version: version.name,
           })),
         }),
         prismadb.stat.createMany({
           data: p.stats.map(({ base_stat: baseStat, effort, stat: { name } }) => ({
             pokemonId: p.id, baseStat, effort, name,
+          })),
+        }),
+        prismadb.species.create({ data: species }),
+        prismadb.genus.createMany({
+          data: s.genera.map(({ genus, language: { name } }) => ({
+            genus, language: name,
+          })),
+        }),
+        prismadb.name.createMany({
+          data: s.names.map(({ name, language }) => ({
+            speciesId: s.id, name, language: language.name,
+          })),
+        }),
+        prismadb.pokedexEntry.createMany({
+          data: s.pokedex_numbers.map(({ entry_number: entry, pokedex }) => ({
+            speciesId: s.id, entry, pokedex: pokedex.name,
+          })),
+        }),
+        prismadb.speciesFlavorTextEntry.createMany({
+          data: s.flavor_text_entries.map(({ flavor_text: flavorText, language, version }) => ({
+            speciesId: s.id, flavorText, language: language.name, version: version.name,
+          })),
+        }),
+        prismadb.variety.createMany({
+          data: s.varieties.map(({ is_default: isDefault, pokemon: { name } }) => ({
+            speciesId: s.id, isDefault, pokemon: name,
           })),
         }),
       ]);
@@ -150,7 +180,7 @@ export async function populateWithMoves(step: number, maxEntries: number) {
       const move: Move = {
         id: m.id,
         accuracy: m.accuracy,
-        damageClassId: +(m.damage_class.url.split('/').slice(-2)[0] || 0),
+        damageClassId: +(parseIdFromUrl(m.damage_class.url) || 0),
         effectChance: m.effect_chance,
         generation: m.generation.name,
         learnedByPokemon: m.learned_by_pokemon.map(({ name }) => name),
@@ -161,9 +191,9 @@ export async function populateWithMoves(step: number, maxEntries: number) {
         target: m.target.name,
         type: m.type.name,
         // meta
-        ailmentId: +(m.meta.ailment.url.split('/').slice(-2)[0] || 0),
+        ailmentId: +(parseIdFromUrl(m.meta.ailment.url) || 0),
         ailmentChance: m.meta.ailment_chance,
-        categoryId: +(m.meta.category.url.split('/').slice(-2)[0] || 0),
+        categoryId: +(parseIdFromUrl(m.meta.category.url) || 0),
         critRate: m.meta.crit_rate,
         drain: m.meta.drain,
         flinchChance: m.meta.flinch_chance,
@@ -213,4 +243,76 @@ export async function populateWithMoves(step: number, maxEntries: number) {
 
   // get all updated pokemon entries back
   return prismadb.move.findMany();
+}
+
+/**
+ * Replace current DB data with entirely new data from the PokéAPI.
+ * Specify a step to limit the number of 'type' queries
+ * performed at any given time.
+ * Then specify a max number of entries. It should be above the actual number of entries
+ * present in the APU to make sure we get all entries even if some get added
+ * in the future.
+ */
+export async function populateWithTypes(step: number, maxEntries: number) {
+  // start from where we left off
+  const currentData = await prismadb.type.findMany();
+
+  const urls = await fetcher(`https://pokeapi.co/api/v2/type?limit=${maxEntries}`)
+    .then(({ results }) => results.map(({ url }: { url: string }) => url));
+
+  if (!Array.isArray(urls)) {
+    return [];
+  }
+
+  /* eslint-disable no-await-in-loop */
+  for (let i = currentData.length; i < urls.length; i += step) {
+    const typeEntries = (await Promise.all(
+      urls.slice(i, i + step).map(fetcher),
+    ))
+      // make sure `this` is PokemonBuilder otherwise this line fails
+      .filter(TypeParser.Check.bind(TypeParser));
+
+    await Promise.all(typeEntries.map(t => {
+      // convert to format used in DB
+      const type: PokemonType = {
+        id: t.id,
+        doubleDamageFrom: t.damage_relations.double_damage_from.map(({ name }) => name),
+        doubleDamageTo: t.damage_relations.double_damage_to.map(({ name }) => name),
+        halfDamageFrom: t.damage_relations.half_damage_from.map(({ name }) => name),
+        halfDamageTo: t.damage_relations.half_damage_to.map(({ name }) => name),
+        noDamageFrom: t.damage_relations.no_damage_from.map(({ name }) => name),
+        noDamageTo: t.damage_relations.no_damage_to.map(({ name }) => name),
+        generation: t.generation.name,
+        moveDamageClass: t.move_damage_class.name,
+        moves: t.moves.map(({ name }) => name),
+        name: t.name,
+        pokemon: t.pokemon.map(({ pokemon }) => pokemon.name),
+      };
+
+      // we use a transaction to make sure all the relevant data exist together in the DB
+      return prismadb.$transaction([
+        prismadb.type.create({ data: type }),
+        prismadb.typeGameIndex.createMany({
+          data: t.game_indices.map(({ game_index: gameIndex, generation }) => (
+            {
+              typeId: t.id, gameIndex, generation: generation.name,
+            }
+          )),
+        }),
+        prismadb.typeName.createMany({
+          data: t.names.map(({ language, name }) => (
+            {
+              typeId: t.id, language: language.name, name,
+            }
+          )),
+        }),
+      ]);
+    }));
+
+    // wait 10 seconds
+    await sleep(10000);
+  }
+
+  // get all updated pokemon entries back
+  return prismadb.type.findMany();
 }

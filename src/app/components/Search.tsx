@@ -1,21 +1,29 @@
 'use client';
 
 import { debounce } from '@/utils/debounce.ts';
-import React, { useState } from 'react';
+import React from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-type Props = {
-  setFilter: (query: string) => void;
-}
+export default function Search() {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const { replace } = useRouter();
 
-export default function SearchBar({ setFilter }: Props) {
-  const [value, setValue] = useState('');
+  const filterPokemon = debounce((term: string) => {
+    const params = new URLSearchParams(searchParams);
 
-  const filterPokemon = debounce((filter: string) => setFilter(filter));
+    if (term) {
+      params.set('query', term);
+    } else {
+      params.delete('query');
+    }
+
+    replace(`${pathname}?${params.toString()}`);
+  }, 300);
 
   const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
     e.preventDefault();
 
-    setValue(e.currentTarget.value);
     filterPokemon(e.currentTarget.value);
   };
 
@@ -23,8 +31,8 @@ export default function SearchBar({ setFilter }: Props) {
     <nav className='w-[100%] sticky top-0 flex justify-center bg-[#81C784] drop-shadow-md'>
       <input
         type='text'
-        value={value}
-        onInput={handleInput}
+        onChange={handleInput}
+        defaultValue={searchParams.get('query')?.toString()}
         placeholder='Search pokémon...'
         className='text-black w-[30vw] h-[5vh] p-2'
       />
