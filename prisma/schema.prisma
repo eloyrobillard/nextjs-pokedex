@@ -71,7 +71,7 @@ model Species {
   genera               Genus[]
   generation           String
   growthRate           String
-  habitat              String
+  habitat              String?
   hasGenderDifferences Boolean
   hatchCounter         Int
   isBaby               Boolean

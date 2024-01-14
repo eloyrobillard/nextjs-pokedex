@@ -24,7 +24,7 @@ export const Species = TypeCompiler.Compile(T.Object({
   })),
   generation: NameAndUrl,
   growth_rate: NameAndUrl,
-  habitat: NameAndUrl,
+  habitat: T.Union([NameAndUrl, T.Null()]),
   has_gender_differences: T.Boolean(),
   hatch_counter: T.Number(),
   id: T.Number(),

@@ -138,7 +138,7 @@ export type Species = {
   genderRate: number;
   generation: string;
   growthRate: string;
-  habitat: string;
+  habitat: string | null;
   hasGenderDifferences: boolean;
   hatchCounter: number;
   isBaby: boolean;

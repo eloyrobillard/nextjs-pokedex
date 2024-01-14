@@ -71,6 +71,21 @@
         }
       }
     ],
-    "jsx-quotes": ["error", "prefer-single"]
+    "jsx-quotes": [
+      "error",
+      "prefer-single"
+    ],
+    "no-shadow": [
+      "off"
+    ],
+    "no-console": [
+      "error",
+      {
+        "allow": [
+          "warn",
+          "error"
+        ]
+      }
+    ]
   }
 }

@@ -49,7 +49,14 @@ export async function populateWithPokemon(step: number, maxEntries: number) {
     const pokemonAndSpeciesTuples = (
       await Promise.all(
         pokemonEntries.map(p => fetcher(p.species.url)
-          .then(s => (SpeciesParser.Check(s) ? [p, s] as const : []))),
+          .then(s => {
+            if (SpeciesParser.Check(s)) {
+              return [p, s] as const;
+            }
+
+            console.error(SpeciesParser.Errors(s).First());
+            return [];
+          })),
       )
     );
 
@@ -79,9 +86,10 @@ export async function populateWithPokemon(step: number, maxEntries: number) {
         evolutionChainId: +(parseIdFromUrl(s.evolution_chain.url) || 0),
         evolvesFromSpecies: s.evolves_from_species?.name || null,
         genderRate: s.gender_rate,
+        genera: s.genera,
         generation: s.generation.name,
         growthRate: s.growth_rate.name,
-        habitat: s.habitat.name,
+        habitat: s.habitat?.name || null,
         hasGenderDifferences: s.has_gender_differences,
         hatchCounter: s.hatch_counter,
         isBaby: s.is_baby,
@@ -95,7 +103,9 @@ export async function populateWithPokemon(step: number, maxEntries: number) {
       // forms, genera, names and stats are all related to the current pokemon
       // we use a transaction to make sure all the relevant data exist together in the DB
       return prismadb.$transaction([
-        prismadb.pokemon.create({ data: pokemon }),
+        prismadb.pokemon.upsert({
+          where: { id: s.id }, update: {}, create: pokemon,
+        }),
         prismadb.form.createMany({
           data: p.forms.map(({ name, url }) => ({
             pokemonId: p.id, name, url,
@@ -111,7 +121,9 @@ export async function populateWithPokemon(step: number, maxEntries: number) {
             pokemonId: p.id, baseStat, effort, name,
           })),
         }),
-        prismadb.species.create({ data: species }),
+        prismadb.species.upsert({
+          where: { id: s.id }, update: {}, create: species,
+        }),
         prismadb.genus.createMany({
           data: s.genera.map(({ genus, language: { name } }) => ({
             genus, language: name,

@@ -9,9 +9,11 @@ import Gauge from '@/app/components/Gauge.tsx';
 import './style.css';
 
 async function Details({ params }: { params: { id: string } }) {
-  // request pokémon + species data by ID
+  const id = Number(params.id);
+
+  // request pokémon + species data by id
   const pokemon = await prismadb.pokemon.findUnique({
-    where: { id: Number(params.id) },
+    where: { id },
     include: {
       forms: true, stats: true,
     },
@@ -22,7 +24,7 @@ async function Details({ params }: { params: { id: string } }) {
   }
 
   const species = await prismadb.species.findUnique({
-    where: { id: pokemon.id },
+    where: { id },
     include: { genera: true },
   });
 
