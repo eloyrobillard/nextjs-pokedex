@@ -86,7 +86,6 @@ export async function populateWithPokemon(step: number, maxEntries: number) {
         evolutionChainId: +(parseIdFromUrl(s.evolution_chain.url) || 0),
         evolvesFromSpecies: s.evolves_from_species?.name || null,
         genderRate: s.gender_rate,
-        genera: s.genera,
         generation: s.generation.name,
         growthRate: s.growth_rate.name,
         habitat: s.habitat?.name || null,
@@ -104,50 +103,64 @@ export async function populateWithPokemon(step: number, maxEntries: number) {
       // we use a transaction to make sure all the relevant data exist together in the DB
       return prismadb.$transaction([
         prismadb.pokemon.upsert({
-          where: { id: s.id }, update: {}, create: pokemon,
-        }),
-        prismadb.form.createMany({
-          data: p.forms.map(({ name, url }) => ({
-            pokemonId: p.id, name, url,
-          })),
-        }),
-        prismadb.gameIndex.createMany({
-          data: p.game_indices.map(({ game_index: gameIndex, version }) => ({
-            pokemonId: p.id, gameIndex, version: version.name,
-          })),
-        }),
-        prismadb.stat.createMany({
-          data: p.stats.map(({ base_stat: baseStat, effort, stat: { name } }) => ({
-            pokemonId: p.id, baseStat, effort, name,
-          })),
+          where: { id: s.id },
+          update: {},
+          create: {
+            ...pokemon,
+            forms: {
+              create: p.forms.map(({ name, url }) => ({
+                name, url,
+              })),
+            },
+            gameIndices: {
+              create: p.game_indices.map(({ game_index: gameIndex, version }) => ({
+                gameIndex, version: version.name,
+              })),
+            },
+            stats: {
+              create: p.stats.map(({ base_stat: baseStat, effort, stat: { name } }) => ({
+                baseStat, effort, name,
+              })),
+            },
+          },
         }),
         prismadb.species.upsert({
-          where: { id: s.id }, update: {}, create: species,
-        }),
-        prismadb.genus.createMany({
-          data: s.genera.map(({ genus, language: { name } }) => ({
-            genus, language: name,
-          })),
-        }),
-        prismadb.name.createMany({
-          data: s.names.map(({ name, language }) => ({
-            speciesId: s.id, name, language: language.name,
-          })),
-        }),
-        prismadb.pokedexEntry.createMany({
-          data: s.pokedex_numbers.map(({ entry_number: entry, pokedex }) => ({
-            speciesId: s.id, entry, pokedex: pokedex.name,
-          })),
-        }),
-        prismadb.speciesFlavorTextEntry.createMany({
-          data: s.flavor_text_entries.map(({ flavor_text: flavorText, language, version }) => ({
-            speciesId: s.id, flavorText, language: language.name, version: version.name,
-          })),
-        }),
-        prismadb.variety.createMany({
-          data: s.varieties.map(({ is_default: isDefault, pokemon: { name } }) => ({
-            speciesId: s.id, isDefault, pokemon: name,
-          })),
+          where: { id: s.id },
+          update: {},
+          create: {
+            ...species,
+            genera: {
+              create: s.genera.map(({ genus, language }) => ({
+                genus, language: language.name,
+              })),
+            },
+            names: {
+              create: s.names.map(({ name, language }) => ({
+                name, language: language.name,
+              })),
+            },
+            pokedexNumbers: {
+              create: s.pokedex_numbers.map(({ entry_number: entry, pokedex }) => ({
+                entry, pokedex: pokedex.name,
+              })),
+            },
+            flavorTextEntries: {
+              create: s.flavor_text_entries.map(({
+                flavor_text: flavorText,
+                language,
+                version,
+              }) => ({
+                flavorText,
+                language: language.name,
+                version: version.name,
+              })),
+            },
+            varieties: {
+              create: s.varieties.map(({ is_default: isDefault, pokemon: { name } }) => ({
+                isDefault, pokemon: name,
+              })),
+            },
+          },
         }),
       ]);
     }));
