@@ -9,7 +9,7 @@ export default function Gauge({ max, stat }: { max: number, stat: number }) {
         style={{ width: `${(stat / max) * 100}%` }}
         // leading-[1.1rem] is to center text inside the div
         className={`
-        leading-[1.1rem]
+          leading-[1.1rem]
           h-[17px]
           rounded-md
           text-right

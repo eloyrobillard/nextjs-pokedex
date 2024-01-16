@@ -4,6 +4,7 @@ import Image from 'next/image';
 import LongIcon from '@/components/LongIcon.tsx';
 import WithTypeColorBg from '@/components/WithTypeColorBg.tsx';
 import Gauge from '@/app/components/Gauge.tsx';
+import PokedexEntries from '@/app/components/PokedexEntries.tsx';
 
 // used for perspective effect
 import './style.css';
@@ -25,7 +26,9 @@ async function Details({ params }: { params: { id: string } }) {
 
   const species = await prismadb.species.findUnique({
     where: { id },
-    include: { genera: true },
+    include: {
+      flavorTextEntries: true, genera: true,
+    },
   });
 
   if (species === null) {
@@ -35,17 +38,17 @@ async function Details({ params }: { params: { id: string } }) {
   const maxStat = Math.max(...pokemon.stats.map(({ baseStat }) => baseStat));
 
   return (
-    <div className='bg-white text-black w-[95vw]'>
+    <div className='bg-white text-black w-[90vw] m-auto'>
       {/* name, genus (top side) */}
       <div className='text-center flex flex-col justify-between'>
         <h1 className='uppercase text-[#6d6d6d] text-5xl'>{pokemon.name}</h1>
-        <WithTypeColorBg type={pokemon.type1}>{species.genera.find(({ language }) => language.startsWith('en'))?.genus}</WithTypeColorBg>
+        <PokedexEntries pokemon={pokemon} species={species} />
       </div>
       <div className='h-[80vh] grid grid-cols-3 items-center'>
         {/* various details (left side) */}
         <div className='perspective'>
           <div className='grid grid-cols-2 h-[250px] rotateY-counterclockwise hover:rotate-0 transition'>
-            <div className='grid grid-rows-6 items-end text-right mr-[1rem] font-medium '>
+            <div className='grid grid-rows-6 items-end text-right mr-[1rem] font-medium'>
               <div>ID</div>
               <div>Height</div>
               <div>Weight</div>
@@ -130,6 +133,10 @@ async function Details({ params }: { params: { id: string } }) {
             </div>
           </div>
         </div>
+      </div>
+      {/* Evolution chain */}
+      <div className='font-medium m-auto flex'>
+        <WithTypeColorBg type={pokemon.type1}>Evolution Chain</WithTypeColorBg>
       </div>
     </div>
   );
