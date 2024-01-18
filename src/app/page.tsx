@@ -11,12 +11,12 @@ export default function Home({ searchParams }: {
   const query = searchParams?.query || '';
 
   return (
-    <div>
+    <>
       <Search />
       <Suspense key={query} fallback={<div>Loading...</div>}>
         <Grid query={query} />
       </Suspense>
-    </div>
+    </>
   );
 }
 

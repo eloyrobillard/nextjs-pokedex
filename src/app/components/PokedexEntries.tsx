@@ -36,7 +36,7 @@ export default function PokedexEntries({ pokemon, species }: Props) {
     }
   };
 
-  document.addEventListener('mousedown', closePopup);
+  window.addEventListener('mousedown', closePopup);
 
   return (
     <>
@@ -47,8 +47,8 @@ export default function PokedexEntries({ pokemon, species }: Props) {
       </button>
       {/* `details pageで`items-center`を使っているので、ここで`align-middle`を使えばちゃんと中央に寄る */}
       {display && (
-        <div ref={popup} className='align-middle flex justify-center'>
-          <div className='absolute top-4 bg-white z-10 w-[40vw] h-[90%] p-[2rem] shadow-2xl rounded-md overflow-y-scroll'>
+        <div ref={popup} className='popup flex justify-center'>
+          <div className='absolute top-4 bg-white border-gray-400 border-[1px] z-10 w-[40vw] h-[90%] p-[2rem] shadow-2xl rounded-md overflow-y-scroll'>
             <div className='flex flex-col gap-2'>
               <p className='uppercase text-[#6d6d6d] text-2xl'>{pokemon.name}</p>
               <div

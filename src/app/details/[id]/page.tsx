@@ -2,16 +2,13 @@ import React from 'react';
 import Image from 'next/image';
 
 import LongIcon from '@/components/LongIcon.tsx';
-import WithTypeColorBg from '@/components/WithTypeColorBg.tsx';
 import Gauge from '@/app/components/Gauge.tsx';
 import PokedexEntries from '@/app/components/PokedexEntries.tsx';
 
 // used for perspective effect
 import './style.css';
 
-async function Details({ params }: { params: { id: string } }) {
-  const id = Number(params.id);
-
+const getData = async (id: number) => {
   // request pokémon + species data by id
   const pokemon = await prismadb.pokemon.findUnique({
     where: { id },
@@ -21,7 +18,7 @@ async function Details({ params }: { params: { id: string } }) {
   });
 
   if (pokemon === null) {
-    return <div>Missing pokémon data</div>;
+    return { error: 'Missing pokémon data' } as const;
   }
 
   const species = await prismadb.species.findUnique({
@@ -32,8 +29,35 @@ async function Details({ params }: { params: { id: string } }) {
   });
 
   if (species === null) {
-    return <div>Missing species data</div>;
+    return { error: 'Missing species data' } as const;
   }
+
+  const evolutionChain = await prismadb.evolutionChain.findUnique({
+    where: { id: species.evolutionChainId },
+  });
+
+  if (species === null) {
+    return { error: 'Missing species data' } as const;
+  }
+
+  return {
+    data: {
+      pokemon,
+      species,
+    },
+  } as const;
+};
+
+async function Details({ params }: { params: { id: string } }) {
+  const id = Number(params.id);
+
+  const { data, error } = await getData(id);
+
+  if (error) {
+    return <div>{error}</div>;
+  }
+
+  const { pokemon, species } = data;
 
   const maxStat = Math.max(...pokemon.stats.map(({ baseStat }) => baseStat));
 
@@ -136,7 +160,15 @@ async function Details({ params }: { params: { id: string } }) {
         </div>
         {/* Evolution chain */}
         <div className='font-medium m-auto flex'>
-          <WithTypeColorBg type={pokemon.type1}>Evolution Chain</WithTypeColorBg>
+          <div
+            style={{ backgroundColor: species.color }}
+            className='h-[30px] m-auto p-1 flex justify-between rounded-md text-white capitalize'
+          >
+            Evolution Chain
+          </div>
+          <div>
+            {species.evolutionChainId}
+          </div>
         </div>
       </div>
     </>
