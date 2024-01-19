@@ -36,7 +36,10 @@ export default function PokedexEntries({ pokemon, species }: Props) {
     }
   };
 
-  window.addEventListener('mousedown', closePopup);
+  // prevent 'document is not defined' warning
+  if (typeof document !== 'undefined') {
+    document.addEventListener('mousedown', closePopup);
+  }
 
   return (
     <>

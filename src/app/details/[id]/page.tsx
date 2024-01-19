@@ -103,9 +103,14 @@ async function Details({ params }: { params: { id: string } }) {
                     <div
                       key={ability}
                       style={{ backgroundColor: species.color }}
-                      className='h-[30px] mr-[10px] p-1 items-start rounded-md text-white font-medium uppercase'
+                      className='h-[30px] mr-[10px] p-1 rounded-md text-white font-medium uppercase'
                     >
-                      {ability}
+                      {/*
+                       * hyphens get automatically carriage returned
+                       * replacing with non-breaking hyphen
+                       * LINK https://stackoverflow.com/a/48980952
+                       */}
+                      {ability.replace(/-/, '−')}
                     </div>
                   ))}
                 </div>
@@ -148,7 +153,7 @@ async function Details({ params }: { params: { id: string } }) {
               </div>
               <div className='grid grid-rows-7 items-end font-extralight'>
                 {pokemon.stats.map(({ id, baseStat }) => (
-                  <Gauge key={id} max={maxStat} stat={baseStat} />
+                  <Gauge key={id} color={species.color} max={maxStat} stat={baseStat} />
                 ))}
                 {/* base stats total */}
                 <div>
