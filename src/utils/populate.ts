@@ -7,6 +7,9 @@ import { TypeParser } from '@/type-builders/type.ts';
 import { PokemonType } from '@/types/type.ts';
 import { Species as SpeciesParser } from '@/type-builders/species.ts';
 import { Move as MoveParser } from '@/type-builders/move.ts';
+import { ChainT, EvolutionChainParser } from '@/type-builders/evolutionChain.ts';
+import { Chained, EvolutionChain } from '@/types/evolutionChain.ts';
+import { Static } from '@sinclair/typebox';
 
 // ===================
 // POKEMON
@@ -340,4 +343,87 @@ export async function populateWithTypes(step: number, maxEntries: number) {
 
   // get all updated pokemon entries back
   return prismadb.type.findMany();
+}
+
+// 進化の仕組み：１か２段階、それとも１段階で複数の可能な進化
+function flattenChain(
+  chain: Static<typeof ChainT>,
+  evolutionChainId: number,
+): Chained {
+  const details = chain.evolution_details[0];
+  // TODO idを取得
+  return {
+    evolutionChainId,
+    evolvesTo: {
+      create: chain.evolves_to.map(ch => flattenChain(
+        ch,
+        evolutionChainId,
+      )),
+    },
+    isBaby: chain.is_baby,
+    species: chain.species.name,
+    // evolution details
+    gender: details?.gender || null,
+    heldItem: details?.held_item.map(({ name }) => name) || [],
+    item: details?.item?.name || null,
+    knownMove: details?.known_move?.name || null,
+    knownMoveType: details?.known_move_type?.name || null,
+    location: details?.location?.name || null,
+    minAffection: details?.min_affection || null,
+    minBeauty: details?.min_beauty || null,
+    minHappiness: details?.min_happiness || null,
+    minLevel: details?.min_level || 0,
+    needsOverworldRain: details?.needs_overworld_rain || false,
+    partySpecies: details?.party_species?.name || null,
+    partyType: details?.party_type?.name || null,
+    relativePhysicalStats: details?.relative_physical_stats?.name || null,
+    timeOfDay: details?.time_of_day || '',
+    tradeSpecies: details?.trade_species?.name || '',
+    trigger: details?.trigger?.name || '',
+    turnUpsideDown: details?.turn_upside_down || false,
+  };
+}
+
+export async function populateWithEvolutionChains(step: number, maxEntries: number) {
+  // start from where we left off
+  // await prismadb.chain.deleteMany();
+  // await prismadb.evolutionChain.deleteMany();
+  const currentData = await prismadb.evolutionChain.findMany();
+
+  const urls = await fetcher(`https://pokeapi.co/api/v2/evolution-chain?limit=${maxEntries}`)
+    .then(({ results }) => results.map(({ url }: { url: string }) => url));
+
+  if (!Array.isArray(urls)) {
+    return [];
+  }
+
+  /* eslint-disable no-await-in-loop */
+  for (let i = currentData.length; i < urls.length; i += step) {
+    const typeEntries = (await Promise.all(
+      urls.slice(i, i + step).map(fetcher),
+    ))
+      // make sure `this` is PokemonBuilder otherwise this line fails
+      .filter(EvolutionChainParser.Check.bind(EvolutionChainParser));
+
+    await Promise.all(typeEntries.map(ec => {
+      // convert to format used in DB
+      const evolutionChain: EvolutionChain = {
+        id: ec.id,
+      };
+      return prismadb.$transaction([
+        prismadb.evolutionChain.create({
+          data: evolutionChain,
+        }),
+        prismadb.chain.create({
+          data: flattenChain(ec.chain, ec.id),
+        }),
+      ]);
+    }));
+
+    // wait 10 seconds
+    await sleep(10000);
+  }
+
+  // get all updated pokemon entries back
+  return prismadb.evolutionChain.findMany();
 }

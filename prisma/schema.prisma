@@ -118,15 +118,15 @@ model Variety {
 // kept it because the id is given by PokéAPI, so it's stable / meaningful
 model EvolutionChain {
   id    Int    @id
-  chain Chain?
+  chain Chain[]
 }
 
 // actual contents of the evolution chain
 // example of a recursive model
 model Chain {
-  id                    Int            @id @default(autoincrement())
+  id                    Int            @id @unique @default(autoincrement())
   evolutionChain        EvolutionChain @relation(fields: [evolutionChainId], references: [id])
-  evolutionChainId      Int            @unique
+  evolutionChainId      Int
   evolvesTo             Chain[]        @relation("parentId")
   isBaby                Boolean
   Parent                Chain?         @relation("parentId", fields: [parentId], references: [id])
