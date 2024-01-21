@@ -124,7 +124,7 @@ model EvolutionChain {
 // actual contents of the evolution chain
 // example of a recursive model
 model Chain {
-  id                    Int            @id @unique @default(autoincrement())
+  id                    Int            @id @unique
   evolutionChain        EvolutionChain @relation(fields: [evolutionChainId], references: [id])
   evolutionChainId      Int
   evolvesTo             Chain[]        @relation("parentId")
@@ -135,8 +135,8 @@ model Chain {
   // from `evolutionDetails` field
   // NOTE this field comes as an array from PokéAPI
   //      so there may be chains with several `evolutionDetails` items (haven't found one thus far)
-  gender                String?
-  heldItem              String[]
+  gender                Int?
+  heldItem              String?
   item                  String?
   knownMove             String?
   knownMoveType         String?
@@ -148,9 +148,9 @@ model Chain {
   needsOverworldRain    Boolean
   partySpecies          String?
   partyType             String?
-  relativePhysicalStats String?
+  relativePhysicalStats Int?
   timeOfDay             String
-  tradeSpecies          String?
+  tradeSpecies          String
   trigger               String
   turnUpsideDown        Boolean
 }

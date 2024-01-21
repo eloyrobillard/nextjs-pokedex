@@ -8,7 +8,7 @@ import { PokemonType } from '@/types/type.ts';
 import { Species as SpeciesParser } from '@/type-builders/species.ts';
 import { Move as MoveParser } from '@/type-builders/move.ts';
 import { ChainT, EvolutionChainParser } from '@/type-builders/evolutionChain.ts';
-import { Chained, EvolutionChain } from '@/types/evolutionChain.ts';
+import { Chain, EvolutionChain } from '@/types/evolutionChain.ts';
 import { Static } from '@sinclair/typebox';
 
 // ===================
@@ -345,26 +345,27 @@ export async function populateWithTypes(step: number, maxEntries: number) {
   return prismadb.type.findMany();
 }
 
+let id = 0;
+
 // 進化の仕組み：１か２段階、それとも１段階で複数の可能な進化
 function flattenChain(
-  chain: Static<typeof ChainT>,
+  initialChain: Static<typeof ChainT>,
   evolutionChainId: number,
-): Chained {
-  const details = chain.evolution_details[0];
-  // TODO idを取得
-  return {
+  parentId: number | null = null,
+): Chain[] {
+  id += 1;
+
+  const details = initialChain.evolution_details[0];
+
+  const chain = {
     evolutionChainId,
-    evolvesTo: {
-      create: chain.evolves_to.map(ch => flattenChain(
-        ch,
-        evolutionChainId,
-      )),
-    },
-    isBaby: chain.is_baby,
-    species: chain.species.name,
+    id,
+    isBaby: initialChain.is_baby,
+    parentId,
+    species: initialChain.species.name,
     // evolution details
     gender: details?.gender || null,
-    heldItem: details?.held_item.map(({ name }) => name) || [],
+    heldItem: details?.held_item?.name || null,
     item: details?.item?.name || null,
     knownMove: details?.known_move?.name || null,
     knownMoveType: details?.known_move_type?.name || null,
@@ -376,12 +377,20 @@ function flattenChain(
     needsOverworldRain: details?.needs_overworld_rain || false,
     partySpecies: details?.party_species?.name || null,
     partyType: details?.party_type?.name || null,
-    relativePhysicalStats: details?.relative_physical_stats?.name || null,
+    relativePhysicalStats: details?.relative_physical_stats || null,
     timeOfDay: details?.time_of_day || '',
     tradeSpecies: details?.trade_species?.name || '',
     trigger: details?.trigger?.name || '',
     turnUpsideDown: details?.turn_upside_down || false,
   };
+
+  const evolutions = initialChain.evolves_to.flatMap(ch => flattenChain(
+    ch,
+    evolutionChainId,
+    id,
+  ));
+
+  return [chain].concat(evolutions);
 }
 
 export async function populateWithEvolutionChains(step: number, maxEntries: number) {
@@ -403,9 +412,18 @@ export async function populateWithEvolutionChains(step: number, maxEntries: numb
       urls.slice(i, i + step).map(fetcher),
     ))
       // make sure `this` is PokemonBuilder otherwise this line fails
-      .filter(EvolutionChainParser.Check.bind(EvolutionChainParser));
+      .filter(val => {
+        const firstError = EvolutionChainParser.Errors(val).First();
+
+        if (firstError) {
+          console.error(firstError, val.id);
+        }
+
+        return EvolutionChainParser.Check.bind(EvolutionChainParser, val);
+      });
 
     await Promise.all(typeEntries.map(ec => {
+      const chains = flattenChain(ec.chain, ec.id).map(e => prismadb.chain.create({ data: e }));
       // convert to format used in DB
       const evolutionChain: EvolutionChain = {
         id: ec.id,
@@ -414,9 +432,7 @@ export async function populateWithEvolutionChains(step: number, maxEntries: numb
         prismadb.evolutionChain.create({
           data: evolutionChain,
         }),
-        prismadb.chain.create({
-          data: flattenChain(ec.chain, ec.id),
-        }),
+        ...chains,
       ]);
     }));
 
