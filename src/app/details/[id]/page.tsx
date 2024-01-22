@@ -4,9 +4,20 @@ import Image from 'next/image';
 import LongIcon from '@/components/LongIcon.tsx';
 import Gauge from '@/app/components/Gauge.tsx';
 import PokedexEntries from '@/app/components/PokedexEntries.tsx';
+import Icon from '@/components/Icon.tsx';
+import { Chain } from '@/types/evolutionChain.ts';
+import { PokemonV2 } from '@/types/pokemon.ts';
 
 // used for perspective effect
 import './style.css';
+
+const getEvolutionTrigger = (ev: Chain) => {
+  if (ev.minLevel) {
+    return `Level ${ev.minLevel}+`;
+  }
+
+  return '<trigger not implemented yet>';
+};
 
 const getData = async (id: number) => {
   // request pokémon + species data by id
@@ -34,14 +45,22 @@ const getData = async (id: number) => {
 
   const evolutionChain = await prismadb.evolutionChain.findUnique({
     where: { id: species.evolutionChainId },
+    include: { chain: true },
   });
 
-  if (species === null) {
-    return { error: 'Missing species data' } as const;
+  if (evolutionChain === null) {
+    return { error: 'Missing evolution data' } as const;
   }
+
+  const evolutions = await Promise.all(
+    evolutionChain.chain.map(ch => prismadb.pokemon.findUniqueOrThrow({
+      where: { name: ch.species },
+    }).then(pok => ({ evolutionDetails: ch, pokemon: pok }))),
+  );
 
   return {
     data: {
+      evolutions,
       pokemon,
       species,
     },
@@ -57,7 +76,7 @@ async function Details({ params }: { params: { id: string } }) {
     return <div>{error}</div>;
   }
 
-  const { pokemon, species } = data;
+  const { evolutions, pokemon, species } = data;
 
   const maxStat = Math.max(...pokemon.stats.map(({ baseStat }) => baseStat));
 
@@ -164,17 +183,66 @@ async function Details({ params }: { params: { id: string } }) {
           </div>
         </div>
         {/* Evolution chain */}
-        <div className='font-medium m-auto flex'>
+        {evolutions && (
+        <div className='font-medium m-auto flex flex-col'>
           <div
             style={{ backgroundColor: species.color }}
             className='h-[30px] m-auto p-1 flex justify-between rounded-md text-white capitalize'
           >
             Evolution Chain
           </div>
-          <div>
-            {species.evolutionChainId}
+          <div className='mt-5 flex justify-around items-center'>
+            {evolutions.reduce((acc, cur) => {
+              if (cur.evolutionDetails.trigger) {
+                return [...acc, cur.evolutionDetails, cur.pokemon];
+              }
+
+              return [...acc, cur.pokemon];
+            }, [] as (Chain | PokemonV2 | null)[]).map(el => {
+              const isChain = (el: Chain | PokemonV2): el is Chain => Object.prototype.hasOwnProperty.call(el, 'trigger');
+
+              if (el && isChain(el)) {
+                // `el` is an object with evolution chain details
+                return (
+                  <div key={el.id}>
+                    <p>{getEvolutionTrigger(el)}</p>
+                    <Image src='/right-arrow.png' alt='right arrow' width={50} height={50} />
+                  </div>
+                );
+              }
+
+              // `el` is an object with pokémon details
+              const pok = el;
+
+              return pok && (
+              <div className='flex flex-col'>
+                <Image
+                  src={`/imagesHQ/${pok.id.toString().padStart(3, '0')}.png`}
+                  alt={pok.name}
+                  width={100}
+                  height={100}
+                  className='m-auto'
+                />
+                <p className='text-center'>
+                  #
+                  {pok.id}
+                </p>
+                <div
+                  style={{ backgroundColor: species.color }}
+                  className='p-[1px] rounded-[0.2rem] text-white text-center font-medium uppercase'
+                >
+                  {pok.name}
+                </div>
+                <div className='flex justify-around m-2'>
+                  <Icon type={pok.type1} />
+                  {pok.type2 && <Icon type={pok.type2} />}
+                </div>
+              </div>
+              );
+            })}
           </div>
         </div>
+        )}
       </div>
     </>
   );

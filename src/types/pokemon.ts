@@ -127,6 +127,22 @@ export type PokemonV2 = {
   weight: number;
 }
 
+export type PokemonWithFormsAndStats = PokemonV2 & {
+  forms: {
+    id: number;
+    pokemonId: number;
+    name: string;
+    url: string;
+  }[];
+  stats: {
+    id: number;
+    baseStat: number;
+    effort: number;
+    name: string;
+    pokemonId: number;
+  }[];
+};
+
 export type Species = {
   id: number;
   baseHappiness: number;
