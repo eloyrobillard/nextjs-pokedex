@@ -6,7 +6,7 @@ import Gauge from '@/app/components/Gauge.tsx';
 import PokedexEntries from '@/app/components/PokedexEntries.tsx';
 import Icon from '@/components/Icon.tsx';
 import { Chain } from '@/types/evolutionChain.ts';
-import { PokemonV2 } from '@/types/pokemon.ts';
+import { PokemonV2, Species } from '@/types/pokemon.ts';
 
 // used for perspective effect
 import './style.css';
@@ -53,9 +53,14 @@ const getData = async (id: number) => {
   }
 
   const evolutions = await Promise.all(
-    evolutionChain.chain.map(ch => prismadb.pokemon.findUniqueOrThrow({
+    evolutionChain.chain.map(ch => prismadb.species.findUnique({
       where: { name: ch.species },
-    }).then(pok => ({ evolutionDetails: ch, pokemon: pok }))),
+    }).then(spe => prismadb.pokemon.findUnique({ where: { id: species.id } }).then(pok => ({
+      evolutionDetails: ch,
+      // pokemon and species are certain to exist
+      pokemon: pok!,
+      species: spe!,
+    })))),
   );
 
   return {
@@ -183,66 +188,65 @@ async function Details({ params }: { params: { id: string } }) {
           </div>
         </div>
         {/* Evolution chain */}
-        {evolutions && (
-        <div className='font-medium m-auto flex flex-col'>
-          <div
-            style={{ backgroundColor: species.color }}
-            className='h-[30px] m-auto p-1 flex justify-between rounded-md text-white capitalize'
-          >
-            Evolution Chain
-          </div>
-          <div className='mt-5 flex justify-around items-center'>
-            {evolutions.reduce((acc, cur) => {
-              if (cur.evolutionDetails.trigger) {
-                return [...acc, cur.evolutionDetails, cur.pokemon];
-              }
+        {evolutions.length > 1 ? (
+          <div className='font-medium m-auto flex flex-col'>
+            <div
+              style={{ backgroundColor: species.color }}
+              className='h-[30px] m-auto p-1 flex justify-between rounded-md text-white capitalize'
+            >
+              Evolution Chain
+            </div>
+            <div className='mt-5 flex justify-around items-center'>
+              {evolutions.reduce((acc, { evolutionDetails, pokemon, species }) => {
+                if (evolutionDetails.trigger) {
+                  return [...acc, evolutionDetails, { pokemon, species }];
+                }
 
-              return [...acc, cur.pokemon];
-            }, [] as (Chain | PokemonV2 | null)[]).map(el => {
-              const isChain = (el: Chain | PokemonV2): el is Chain => Object.prototype.hasOwnProperty.call(el, 'trigger');
+                return [...acc, { pokemon, species }];
+              }, [] as (Chain | { pokemon: PokemonV2, species: Species})[]).map(el => {
+                const isChain = (el: Chain | { pokemon: PokemonV2, species: Species}): el is Chain => Object.prototype.hasOwnProperty.call(el, 'trigger');
 
-              if (el && isChain(el)) {
-                // `el` is an object with evolution chain details
+                if (el && isChain(el)) {
+                  // `el` is an object with evolution chain details
+                  return (
+                    <div key={el.id}>
+                      <p>{getEvolutionTrigger(el)}</p>
+                      <Image src='/right-arrow.png' alt='right arrow' width={50} height={50} />
+                    </div>
+                  );
+                }
+
+                const { pokemon: evolution } = el;
+
                 return (
-                  <div key={el.id}>
-                    <p>{getEvolutionTrigger(el)}</p>
-                    <Image src='/right-arrow.png' alt='right arrow' width={50} height={50} />
+                  <div key={evolution.id} className='flex flex-col'>
+                    <Image
+                      src={`/imagesHQ/${evolution.id.toString().padStart(3, '0')}.png`}
+                      alt={evolution.name}
+                      width={100}
+                      height={100}
+                      className='m-auto'
+                    />
+                    <p className='text-center'>
+                      #
+                      {evolution.id}
+                    </p>
+                    <div
+                      style={{ backgroundColor: species.color }}
+                      className='p-[1px] rounded-[0.2rem] text-white text-center font-medium uppercase'
+                    >
+                      {evolution.name}
+                    </div>
+                    <div className='flex justify-around m-2'>
+                      <Icon type={evolution.type1} />
+                      {evolution.type2 && <Icon type={evolution.type2} />}
+                    </div>
                   </div>
                 );
-              }
-
-              // `el` is an object with pokémon details
-              const pok = el;
-
-              return pok && (
-              <div className='flex flex-col'>
-                <Image
-                  src={`/imagesHQ/${pok.id.toString().padStart(3, '0')}.png`}
-                  alt={pok.name}
-                  width={100}
-                  height={100}
-                  className='m-auto'
-                />
-                <p className='text-center'>
-                  #
-                  {pok.id}
-                </p>
-                <div
-                  style={{ backgroundColor: species.color }}
-                  className='p-[1px] rounded-[0.2rem] text-white text-center font-medium uppercase'
-                >
-                  {pok.name}
-                </div>
-                <div className='flex justify-around m-2'>
-                  <Icon type={pok.type1} />
-                  {pok.type2 && <Icon type={pok.type2} />}
-                </div>
-              </div>
-              );
-            })}
+              })}
+            </div>
           </div>
-        </div>
-        )}
+        ) : null}
       </div>
     </>
   );

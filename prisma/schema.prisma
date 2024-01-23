@@ -77,7 +77,7 @@ model Species {
   isBaby               Boolean
   isLegendary          Boolean
   isMythical           Boolean
-  name                 String
+  name                 String                   @unique
   names                Name[]
   order                Int
   pokedexNumbers       PokedexEntry[]
@@ -117,7 +117,7 @@ model Variety {
 // just an id for the chain, the real data is in the Chain children
 // kept it because the id is given by PokéAPI, so it's stable / meaningful
 model EvolutionChain {
-  id    Int    @id
+  id    Int     @id
   chain Chain[]
 }
 
