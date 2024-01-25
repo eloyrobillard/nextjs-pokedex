@@ -221,7 +221,7 @@ model Move {
 // paralysis, sleep, freeze, burn, poison, confusion, infatuation, trap, nightmare, torment, disable, yawn
 // heal-block, no-type-immunity, leech-seed, embargo, perish-song, ingrain, unknown, none
 model Ailment {
-  id    Int           @id
+  id    Int           @id @unique
   moves String
   name  String
   names AilmentName[]
@@ -239,7 +239,7 @@ model AilmentName {
 
 // one of: status, physical, special
 model DamageClass {
-  id           Int                      @id
+  id           Int                      @id @unique
   descriptions DamageClassDescription[]
   name         String
   names        DamageClassName[]
@@ -284,7 +284,7 @@ model FlavorTextEntry {
 
 // those items containing a move to teach your pokémon
 model Machine {
-  id           Int    @id
+  id           Int    @id @unique
   item         String @unique
   moveName     String
   move         Move   @relation(fields: [moveId], references: [id])
@@ -295,8 +295,8 @@ model Machine {
 // one of: damage, ailment, net-good-stats, heal, damage+ailment, swagger, damage+lower, damage+raise
 // damage+heal, ohko (one-hit KO), whole-field-effect, field-effect, force-switch, unique
 model MoveCategory {
+  id           Int                       @id @unique
   descriptions MoveCategoryDescription[]
-  id           Int                       @id
   moves        Move[]
   name         String
 }
