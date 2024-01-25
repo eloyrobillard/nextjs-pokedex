@@ -2,7 +2,7 @@ import { Pokemon as PokemonParser } from '@/type-builders/pokemon.ts';
 import fetcher from '@/libs/fetcher.ts';
 import { sleep } from '@/utils/sleep.ts';
 import prismadb from '@/libs/prismadb.ts';
-import { Move, PokemonV2, Species } from '@/types/pokemon.ts';
+import { Move, PokemonV2 } from '@/types/pokemon.ts';
 import { TypeParser } from '@/type-builders/type.ts';
 import { PokemonType } from '@/types/type.ts';
 import { Species as SpeciesParser } from '@/type-builders/species.ts';
@@ -362,7 +362,6 @@ function flattenChain(
     id,
     isBaby: initialChain.is_baby,
     parentId,
-    species: initialChain.species.name,
     // evolution details
     gender: details?.gender || null,
     heldItem: details?.held_item?.name || null,
@@ -424,10 +423,12 @@ export async function populateWithEvolutionChains(step: number, maxEntries: numb
 
     await Promise.all(typeEntries.map(ec => {
       const chains = flattenChain(ec.chain, ec.id).map(e => prismadb.chain.create({ data: e }));
+
       // convert to format used in DB
       const evolutionChain: EvolutionChain = {
         id: ec.id,
       };
+
       return prismadb.$transaction([
         prismadb.evolutionChain.create({
           data: evolutionChain,

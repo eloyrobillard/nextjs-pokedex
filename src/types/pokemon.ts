@@ -120,7 +120,6 @@ export type PokemonV2 = {
   isDefault: boolean;
   name: string;
   order: number;
-  species: string;
   sprite: string;
   type1: string;
   type2: string | null;
@@ -142,25 +141,3 @@ export type PokemonWithFormsAndStats = PokemonV2 & {
     pokemonId: number;
   }[];
 };
-
-export type Species = {
-  id: number;
-  baseHappiness: number;
-  captureRate: number;
-  color: string;
-  eggGroups: string[];
-  evolutionChainId: number;
-  evolvesFromSpecies: string | null;
-  genderRate: number;
-  generation: string;
-  growthRate: string;
-  habitat: string | null;
-  hasGenderDifferences: boolean;
-  hatchCounter: number;
-  isBaby: boolean;
-  isLegendary: boolean;
-  isMythical: boolean;
-  name: string;
-  order: number;
-  shape: string;
-}

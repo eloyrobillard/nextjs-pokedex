@@ -11,7 +11,7 @@ datasource db {
 }
 
 model Pokemon {
-  id             Int         @id
+  id             Int         @id @unique
   abilities      String[]
   baseExperience Int
   forms          Form[]
@@ -21,7 +21,7 @@ model Pokemon {
   moves          Move[]
   name           String      @unique
   order          Int
-  species        String
+  species        Species?
   sprite         String
   stats          Stat[]
   type1          String
@@ -59,12 +59,14 @@ model Stat {
 
 // one-to-one relation with Pokemon?
 model Species {
-  id                   Int                      @id
+  id                   Int                      @id @unique
   baseHappiness        Int
   captureRate          Int
+  chain                Chain?
   color                String
   eggGroups            String[]
-  evolutionChainId     Int
+  evolutionChain       EvolutionChain           @relation(fields: [evolutionChainId], references: [id])
+  evolutionChainId     Int                      @unique
   evolvesFromSpecies   String?
   flavorTextEntries    SpeciesFlavorTextEntry[]
   genderRate           Int
@@ -80,6 +82,9 @@ model Species {
   name                 String                   @unique
   names                Name[]
   order                Int
+  pokemon              Pokemon                  @relation(fields: [pokemonId], references: [id])
+  pokemonId            Int                      @unique
+  pokedexId            Int
   pokedexNumbers       PokedexEntry[]
   shape                String
   varieties            Variety[]
@@ -93,7 +98,7 @@ model PokedexEntry {
   // updated-unova, conquest-gallery, kalos-central, kalos-coastal, kalos-mountain, updated-hoenn
   // original-alola, original-melemele, original-kalala, original-ulaula, original-poni, updated-alola
   pokedex   String
-  Species   Species @relation(fields: [speciesId], references: [id])
+  species   Species @relation(fields: [speciesId], references: [id])
   speciesId Int
 }
 
@@ -102,7 +107,7 @@ model SpeciesFlavorTextEntry {
   flavorText String
   language   String
   version    String
-  Species    Species @relation(fields: [speciesId], references: [id])
+  species    Species @relation(fields: [speciesId], references: [id])
   speciesId  Int
 }
 
@@ -110,15 +115,16 @@ model Variety {
   id        Int     @id @default(autoincrement())
   isDefault Boolean
   pokemon   String
-  Species   Species @relation(fields: [speciesId], references: [id])
+  species   Species @relation(fields: [speciesId], references: [id])
   speciesId Int
 }
 
 // just an id for the chain, the real data is in the Chain children
 // kept it because the id is given by PokéAPI, so it's stable / meaningful
 model EvolutionChain {
-  id    Int     @id
-  chain Chain[]
+  id      Int      @id
+  chain   Chain[]
+  Species Species?
 }
 
 // actual contents of the evolution chain
@@ -129,9 +135,10 @@ model Chain {
   evolutionChainId      Int
   evolvesTo             Chain[]        @relation("parentId")
   isBaby                Boolean
-  Parent                Chain?         @relation("parentId", fields: [parentId], references: [id])
+  parent                Chain?         @relation("parentId", fields: [parentId], references: [id])
   parentId              Int?
-  species               String
+  species               Species        @relation(fields: [speciesId], references: [id])
+  speciesId             Int            @unique
   // from `evolutionDetails` field
   // NOTE this field comes as an array from PokéAPI
   //      so there may be chains with several `evolutionDetails` items (haven't found one thus far)
@@ -162,7 +169,7 @@ model Form {
   pokemonId Int
   name      String  @unique
   url       String
-  Pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
+  pokemon   Pokemon @relation(fields: [pokemonId], references: [id])
 }
 
 // flavor text like 'seed pokémon' for Bulbasaur and evolutions
@@ -175,9 +182,9 @@ model Genus {
 
 // move names for game versions the move is available in
 model Move {
-  id                Int               @id
+  id                Int               @id @unique
   accuracy          Int
-  DamageClass       DamageClass       @relation(fields: [damageClassId], references: [id])
+  damageClass       DamageClass       @relation(fields: [damageClassId], references: [id])
   damageClassId     Int
   effectChance      Int
   effectEntries     EffectEntry[]
@@ -187,7 +194,7 @@ model Move {
   machines          Machine[]
   name              String            @unique
   names             MoveName[]
-  Pokemons          Pokemon[]
+  pokemons          Pokemon[]
   power             Int
   pp                Int
   priority          Int
@@ -195,10 +202,10 @@ model Move {
   type              String
   // the next fields are part of the move's 'meta' data
   // usually it's own object, but kept it here instead of creating a whole new model
-  Ailment           Ailment           @relation(fields: [ailmentId], references: [id])
+  ailment           Ailment           @relation(fields: [ailmentId], references: [id])
   ailmentId         Int
   ailmentChance     Int
-  Category          MoveCategory      @relation(fields: [categoryId], references: [id])
+  category          MoveCategory      @relation(fields: [categoryId], references: [id])
   categoryId        Int
   critRate          Int
   drain             Int
@@ -218,7 +225,7 @@ model Ailment {
   moves String
   name  String
   names AilmentName[]
-  Move  Move[]
+  move  Move[]
 }
 
 // ailment name in all available languages
@@ -226,7 +233,7 @@ model AilmentName {
   id        Int     @id @default(autoincrement())
   language  String
   name      String
-  Ailment   Ailment @relation(fields: [ailmentId], references: [id])
+  ailment   Ailment @relation(fields: [ailmentId], references: [id])
   ailmentId Int
 }
 
@@ -244,14 +251,14 @@ model DamageClass {
 model DamageClassDescription {
   description   String      @unique
   language      String
-  DamageClass   DamageClass @relation(fields: [damageClassId], references: [id])
+  damageClass   DamageClass @relation(fields: [damageClassId], references: [id])
   damageClassId Int
 }
 
 model DamageClassName {
   language      String
   name          String      @unique
-  DamageClass   DamageClass @relation(fields: [damageClassId], references: [id])
+  damageClass   DamageClass @relation(fields: [damageClassId], references: [id])
   damageClassId Int
 }
 
@@ -261,7 +268,7 @@ model EffectEntry {
   effect      String @unique
   language    String
   shortEffect String
-  Move        Move   @relation(fields: [moveId], references: [id])
+  move        Move   @relation(fields: [moveId], references: [id])
   moveId      Int
 }
 
@@ -270,7 +277,7 @@ model FlavorTextEntry {
   id           Int    @id @default(autoincrement())
   flavorText   String @unique
   language     String
-  Move         Move   @relation(fields: [moveId], references: [id])
+  move         Move   @relation(fields: [moveId], references: [id])
   moveId       Int
   versionGroup String
 }
@@ -280,7 +287,7 @@ model Machine {
   id           Int    @id
   item         String @unique
   moveName     String
-  Move         Move   @relation(fields: [moveId], references: [id])
+  move         Move   @relation(fields: [moveId], references: [id])
   moveId       Int
   versionGroup String
 }
@@ -299,7 +306,7 @@ model MoveCategoryDescription {
   id          Int          @id @default(autoincrement())
   description String
   language    String
-  Category    MoveCategory @relation(fields: [categoryId], references: [id])
+  category    MoveCategory @relation(fields: [categoryId], references: [id])
   categoryId  Int
 }
 
@@ -307,12 +314,12 @@ model MoveName {
   id       Int    @id @default(autoincrement())
   language String
   name     String @unique
-  Move     Move   @relation(fields: [moveId], references: [id])
+  move     Move   @relation(fields: [moveId], references: [id])
   moveId   Int
 }
 
 model Type {
-  id               Int             @id
+  id               Int             @id @unique
   doubleDamageFrom String[]
   doubleDamageTo   String[]
   halfDamageFrom   String[]
@@ -325,7 +332,6 @@ model Type {
   moves            String[]
   name             String
   names            TypeName[]
-  pokemon          String[]
 }
 
 model TypeGameIndex {
@@ -340,6 +346,6 @@ model TypeName {
   id       Int    @id @unique @default(autoincrement())
   language String
   name     String
-  Type     Type?  @relation(fields: [typeId], references: [id])
-  typeId   Int?
+  type     Type   @relation(fields: [typeId], references: [id])
+  typeId   Int
 }

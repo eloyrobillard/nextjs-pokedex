@@ -6,10 +6,11 @@ import Gauge from '@/app/components/Gauge.tsx';
 import PokedexEntries from '@/app/components/PokedexEntries.tsx';
 import Icon from '@/components/Icon.tsx';
 import { Chain } from '@/types/evolutionChain.ts';
-import { PokemonV2, Species } from '@/types/pokemon.ts';
+import { PokemonV2 } from '@/types/pokemon.ts';
 
 // used for perspective effect
 import './style.css';
+import { Species } from '@/types/species.ts';
 
 const getEvolutionTrigger = (ev: Chain) => {
   if (ev.minLevel) {
@@ -21,21 +22,30 @@ const getEvolutionTrigger = (ev: Chain) => {
 
 const getData = async (id: number) => {
   // request pokémon + species data by id
-  const pokemon = await prismadb.pokemon.findUnique({
-    where: { id },
-    include: {
-      forms: true, stats: true,
-    },
-  });
-
-  if (pokemon === null) {
-    return { error: 'Missing pokémon data' } as const;
-  }
-
   const species = await prismadb.species.findUnique({
     where: { id },
     include: {
-      flavorTextEntries: true, genera: true,
+      evolutionChain: {
+        include: {
+          chain: {
+            include: {
+              species: {
+                include: {
+                  pokemon: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      flavorTextEntries: true,
+      genera: true,
+      pokemon: {
+        include: {
+          forms: true,
+          stats: true,
+        },
+      },
     },
   });
 
@@ -43,45 +53,19 @@ const getData = async (id: number) => {
     return { error: 'Missing species data' } as const;
   }
 
-  const evolutionChain = await prismadb.evolutionChain.findUnique({
-    where: { id: species.evolutionChainId },
-    include: { chain: true },
-  });
-
-  if (evolutionChain === null) {
-    return { error: 'Missing evolution data' } as const;
-  }
-
-  const evolutions = await Promise.all(
-    evolutionChain.chain.map(ch => prismadb.species.findUnique({
-      where: { name: ch.species },
-    }).then(spe => prismadb.pokemon.findUnique({ where: { id: species.id } }).then(pok => ({
-      evolutionDetails: ch,
-      // pokemon and species are certain to exist
-      pokemon: pok!,
-      species: spe!,
-    })))),
-  );
-
-  return {
-    data: {
-      evolutions,
-      pokemon,
-      species,
-    },
-  } as const;
+  return { species } as const;
 };
 
 async function Details({ params }: { params: { id: string } }) {
   const id = Number(params.id);
 
-  const { data, error } = await getData(id);
+  const { species, error } = await getData(id);
 
   if (error) {
     return <div>{error}</div>;
   }
 
-  const { evolutions, pokemon, species } = data;
+  const { evolutionChain, pokemon } = species;
 
   const maxStat = Math.max(...pokemon.stats.map(({ baseStat }) => baseStat));
 
@@ -95,7 +79,7 @@ async function Details({ params }: { params: { id: string } }) {
         {/* name, genus (top side) */}
         <div className='text-center flex flex-col justify-between items-center'>
           <p className='uppercase text-[#6d6d6d] text-5xl'>{pokemon.name}</p>
-          <PokedexEntries pokemon={pokemon} species={species} />
+          <PokedexEntries species={species} />
         </div>
         <div className='h-[80vh] grid grid-cols-3 items-center'>
           {/* various details (left side) */}
@@ -188,7 +172,7 @@ async function Details({ params }: { params: { id: string } }) {
           </div>
         </div>
         {/* Evolution chain */}
-        {evolutions.length > 1 ? (
+        {evolutionChain.chain.length > 1 ? (
           <div className='font-medium m-auto flex flex-col'>
             <div
               style={{ backgroundColor: species.color }}
@@ -197,14 +181,14 @@ async function Details({ params }: { params: { id: string } }) {
               Evolution Chain
             </div>
             <div className='mt-5 flex justify-around items-center'>
-              {evolutions.reduce((acc, { evolutionDetails, pokemon, species }) => {
-                if (evolutionDetails.trigger) {
-                  return [...acc, evolutionDetails, { pokemon, species }];
+              {evolutionChain.chain.reduce((acc, ch) => {
+                if (ch.trigger) {
+                  return [...acc, { ...ch, species: species.name }, ch.species];
                 }
 
-                return [...acc, { pokemon, species }];
-              }, [] as (Chain | { pokemon: PokemonV2, species: Species})[]).map(el => {
-                const isChain = (el: Chain | { pokemon: PokemonV2, species: Species}): el is Chain => Object.prototype.hasOwnProperty.call(el, 'trigger');
+                return [...acc, ch.species];
+              }, [] as (Chain | (Species & { pokemon: PokemonV2}))[]).map(el => {
+                const isChain = (el: Chain | Species): el is Chain => Object.prototype.hasOwnProperty.call(el, 'trigger');
 
                 if (el && isChain(el)) {
                   // `el` is an object with evolution chain details

@@ -2,10 +2,9 @@
 
 import React, { useRef, useState } from 'react';
 
-import { PokemonV2, Species } from '@/types/pokemon.ts';
+import { Species } from '@/types/species.ts';
 
 type Props = {
-  pokemon: PokemonV2;
   species: Species & {
     genera: {
       id: number;
@@ -22,7 +21,7 @@ type Props = {
   };
 }
 
-export default function PokedexEntries({ pokemon, species }: Props) {
+export default function PokedexEntries({ species }: Props) {
   const [display, setDisplay] = useState(false);
 
   // keeping ref to popup div so that user can close modal when clicking outside of it
@@ -53,7 +52,7 @@ export default function PokedexEntries({ pokemon, species }: Props) {
         <div ref={popup} className='popup flex justify-center'>
           <div className='absolute top-4 bg-white border-gray-400 border-[1px] z-10 w-[40vw] h-[90%] p-[2rem] shadow-2xl rounded-md overflow-y-scroll'>
             <div className='flex flex-col gap-2'>
-              <p className='uppercase text-[#6d6d6d] text-2xl'>{pokemon.name}</p>
+              <p className='uppercase text-[#6d6d6d] text-2xl'>{species.name}</p>
               <div
                 style={{ backgroundColor: species.color }}
                 className='h-[30px] m-auto p-1 flex justify-between rounded-md text-white capitalize'

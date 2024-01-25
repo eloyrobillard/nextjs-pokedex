@@ -3,7 +3,6 @@ export type Chain = {
   id: number;
   isBaby: boolean
   parentId: number | null;
-  species: string
   // from `evolutionDetails` field
   // NOTE this field comes as an array from PokéAPI
   //      so there may be chains with several `evolutionDetails` items (haven't found one thus far)
