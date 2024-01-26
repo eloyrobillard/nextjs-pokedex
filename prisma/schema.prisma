@@ -13,7 +13,7 @@ datasource db {
 model Pokemon {
   id             Int         @id @unique
   abilities      String[]
-  baseExperience Int
+  baseExperience Int?
   forms          Form[]
   gameIndices    GameIndex[]
   height         Int
@@ -60,7 +60,7 @@ model Stat {
 // one-to-one relation with Pokemon?
 model Species {
   id                   Int                      @id @unique
-  baseHappiness        Int
+  baseHappiness        Int?
   captureRate          Int
   chain                Chain?
   color                String
@@ -75,7 +75,7 @@ model Species {
   growthRate           String
   habitat              String?
   hasGenderDifferences Boolean
-  hatchCounter         Int
+  hatchCounter         Int?
   isBaby               Boolean
   isLegendary          Boolean
   isMythical           Boolean
@@ -84,7 +84,6 @@ model Species {
   order                Int
   pokemon              Pokemon                  @relation(fields: [pokemonId], references: [id])
   pokemonId            Int                      @unique
-  pokedexId            Int
   pokedexNumbers       PokedexEntry[]
   shape                String
   varieties            Variety[]

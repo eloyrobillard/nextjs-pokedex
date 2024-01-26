@@ -21,7 +21,9 @@ type Props = {
   };
 }
 
-export default function PokedexEntries({ species }: Props) {
+export default function PokedexEntries({
+  species,
+}: Props) {
   const [display, setDisplay] = useState(false);
 
   // keeping ref to popup div so that user can close modal when clicking outside of it
@@ -43,8 +45,15 @@ export default function PokedexEntries({ species }: Props) {
   return (
     <>
       <button type='button' onClick={() => setDisplay(prev => !prev)}>
-        <div style={{ backgroundColor: species.color }} className='h-[30px] m-auto p-1 flex justify-between rounded-md text-white'>
-          {species.genera.find(({ language }) => language.startsWith('en'))?.genus}
+        <div
+          style={{
+            backgroundColor: species.color,
+          }}
+          className='h-[30px] m-auto p-1 flex justify-between rounded-md text-white'
+        >
+          {species.genera.find(({
+            language,
+          }) => language.startsWith('en'))?.genus}
         </div>
       </button>
       {/* `details pageで`items-center`を使っているので、ここで`align-middle`を使えばちゃんと中央に寄る */}
@@ -54,16 +63,22 @@ export default function PokedexEntries({ species }: Props) {
             <div className='flex flex-col gap-2'>
               <p className='uppercase text-[#6d6d6d] text-2xl'>{species.name}</p>
               <div
-                style={{ backgroundColor: species.color }}
+                style={{
+                  backgroundColor: species.color,
+                }}
                 className='h-[30px] m-auto p-1 flex justify-between rounded-md text-white capitalize'
               >
                 Pokédex Entries
               </div>
               <hr />
-              {species.flavorTextEntries.filter(({ language }) => language.startsWith('en')).map(entry => (
+              {species.flavorTextEntries.filter(({
+                language,
+              }) => language.startsWith('en')).map(entry => (
                 <div key={entry.id} className='flex flex-col mt-3'>
                   <div
-                    style={{ backgroundColor: species.color }}
+                    style={{
+                      backgroundColor: species.color,
+                    }}
                     className='h-[30px] m-auto p-1 flex justify-between rounded-md text-white capitalize'
                   >
                     {`Pokémon ${entry.version}`}

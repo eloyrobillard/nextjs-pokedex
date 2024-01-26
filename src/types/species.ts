@@ -4,7 +4,6 @@ export type Species = {
   captureRate: number;
   color: string;
   eggGroups: string[];
-  evolutionChainId: number;
   evolvesFromSpecies: string | null;
   genderRate: number;
   generation: string;

@@ -3,14 +3,21 @@ import Link from 'next/link';
 
 import prismadb from '@/libs/prismadb.ts';
 import Card from '@/app/components/Card.tsx';
-// import { fetchAllFromTable } from '@/utils/apiToJson.ts';
-// import { populateWithTypes } from '@/utils/populate.ts';
+import { populate } from '@/utils/populate.ts';
 
-export default async function Grid({ query }: { query: string }) {
-  // await populateWithTypes(50, 2000);
-  // await fetchAllFromTable('move');
+export default async function Grid({
+  query,
+}: { query: string }) {
+  // await populate();
   const pokemonList = await prismadb.pokemon.findMany({
-    where: { name: { contains: query } }, orderBy: [{ id: 'asc' }],
+    where: {
+      name: {
+        contains: query,
+      },
+    },
+    orderBy: [{
+      id: 'asc',
+    }],
   });
 
   return (

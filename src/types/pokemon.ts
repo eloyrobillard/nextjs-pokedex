@@ -115,7 +115,7 @@ export type Pokemon = {
 export type PokemonV2 = {
   id: number;
   abilities: string[];
-  baseExperience: number;
+  baseExperience: number | null;
   height: number;
   isDefault: boolean;
   name: string;

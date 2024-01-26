@@ -9,12 +9,14 @@ const FlavorTextEntry =
     version: NameAndUrl,
   });
 
-export const Species = TypeCompiler.Compile(T.Object({
-  base_happiness: T.Number(),
+export const SpeciesSchema = T.Object({
+  base_happiness: T.Union([T.Number(), T.Null()]),
   capture_rate: T.Number(),
   color: NameAndUrl,
   egg_groups: T.Array(NameAndUrl),
-  evolution_chain: T.Object({ url: T.String() }),
+  evolution_chain: T.Object({
+    url: T.String(),
+  }),
   evolves_from_species: T.Union([NameAndUrl, T.Null()]),
   flavor_text_entries: T.Array(FlavorTextEntry),
   gender_rate: T.Number(),
@@ -43,4 +45,6 @@ export const Species = TypeCompiler.Compile(T.Object({
     is_default: T.Boolean(),
     pokemon: NameAndUrl,
   })),
-}));
+});
+
+export const SpeciesParser = TypeCompiler.Compile(SpeciesSchema);

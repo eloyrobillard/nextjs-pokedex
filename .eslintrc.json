@@ -57,12 +57,8 @@
     "object-curly-newline": [
       "error",
       {
-        "ObjectExpression": {
-          "consistent": true
-        },
-        "ObjectPattern": {
-          "consistent": true
-        },
+        "ObjectExpression": "always",
+        "ObjectPattern": "always",
         "ImportDeclaration": {
           "consistent": true
         },

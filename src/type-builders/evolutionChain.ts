@@ -2,7 +2,7 @@ import { TypeCompiler } from '@sinclair/typebox/compiler';
 import { Type as T } from '@sinclair/typebox';
 import { NameAndUrl } from '@/type-builders/common.ts';
 
-export const ChainT = T.Recursive(This => T.Object({
+export const ChainSchema = T.Recursive(This => T.Object({
   evolution_details: T.Array(T.Object({
     gender: T.Union([T.Number(), T.Null()]),
     held_item: T.Union([NameAndUrl, T.Null()]),
@@ -28,8 +28,10 @@ export const ChainT = T.Recursive(This => T.Object({
   species: NameAndUrl,
 }));
 
-export const EvolutionChainParser = TypeCompiler.Compile(T.Object({
+export const EvolutionChainSchema = T.Object({
   baby_trigger_item: T.Union([NameAndUrl, T.Null()]),
-  chain: ChainT,
+  chain: ChainSchema,
   id: T.Number(),
-}));
+});
+
+export const EvolutionChainParser = TypeCompiler.Compile(EvolutionChainSchema);

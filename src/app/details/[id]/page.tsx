@@ -23,7 +23,9 @@ const getEvolutionTrigger = (ev: Chain) => {
 const getData = async (id: number) => {
   // request pokémon + species data by id
   const species = await prismadb.species.findUnique({
-    where: { id },
+    where: {
+      id,
+    },
     include: {
       evolutionChain: {
         include: {
@@ -50,29 +52,43 @@ const getData = async (id: number) => {
   });
 
   if (species === null) {
-    return { error: 'Missing species data' } as const;
+    return {
+      error: 'Missing species data',
+    } as const;
   }
 
-  return { species } as const;
+  return {
+    species,
+  } as const;
 };
 
-async function Details({ params }: { params: { id: string } }) {
+async function Details({
+  params,
+}: { params: { id: string } }) {
   const id = Number(params.id);
 
-  const { species, error } = await getData(id);
+  const {
+    species, error,
+  } = await getData(id);
 
   if (error) {
     return <div>{error}</div>;
   }
 
-  const { evolutionChain, pokemon } = species;
+  const {
+    evolutionChain, pokemon,
+  } = species;
 
-  const maxStat = Math.max(...pokemon.stats.map(({ baseStat }) => baseStat));
+  const maxStat = Math.max(...pokemon.stats.map(({
+    baseStat,
+  }) => baseStat));
 
   return (
     <>
       <div
-        style={{ backgroundColor: species.color }}
+        style={{
+          backgroundColor: species.color,
+        }}
         className='w-[100%] h-[5vh] sticky top-0 flex justify-center drop-shadow-md mb-[1rem]'
       />
       <div className='bg-white text-black w-[90vw] m-auto'>
@@ -110,7 +126,9 @@ async function Details({ params }: { params: { id: string } }) {
                   {pokemon.abilities.map(ability => (
                     <div
                       key={ability}
-                      style={{ backgroundColor: species.color }}
+                      style={{
+                        backgroundColor: species.color,
+                      }}
                       className='h-[30px] mr-[10px] p-1 rounded-md text-white font-medium uppercase'
                     >
                       {/*
@@ -127,10 +145,14 @@ async function Details({ params }: { params: { id: string } }) {
                   {pokemon.type2 && <LongIcon type={pokemon.type2} />}
                 </div>
                 <div className='flex'>
-                  {pokemon.forms.map(({ name }) => (
+                  {pokemon.forms.map(({
+                    name,
+                  }) => (
                     <div
                       key={name}
-                      style={{ backgroundColor: species.color }}
+                      style={{
+                        backgroundColor: species.color,
+                      }}
                       className='h-[30px] mr-[10px] p-1 items-start rounded-md text-white font-medium uppercase'
                     >
                       {name}
@@ -160,12 +182,16 @@ async function Details({ params }: { params: { id: string } }) {
                 <div>Total</div>
               </div>
               <div className='grid grid-rows-7 items-end font-extralight'>
-                {pokemon.stats.map(({ id, baseStat }) => (
+                {pokemon.stats.map(({
+                  id, baseStat,
+                }) => (
                   <Gauge key={id} color={species.color} max={maxStat} stat={baseStat} />
                 ))}
                 {/* base stats total */}
                 <div>
-                  {pokemon.stats.reduce((acc, { baseStat }) => acc + baseStat, 0)}
+                  {pokemon.stats.reduce((acc, {
+                    baseStat,
+                  }) => acc + baseStat, 0)}
                 </div>
               </div>
             </div>
@@ -175,7 +201,9 @@ async function Details({ params }: { params: { id: string } }) {
         {evolutionChain.chain.length > 1 ? (
           <div className='font-medium m-auto flex flex-col'>
             <div
-              style={{ backgroundColor: species.color }}
+              style={{
+                backgroundColor: species.color,
+              }}
               className='h-[30px] m-auto p-1 flex justify-between rounded-md text-white capitalize'
             >
               Evolution Chain
@@ -183,7 +211,9 @@ async function Details({ params }: { params: { id: string } }) {
             <div className='mt-5 flex justify-around items-center'>
               {evolutionChain.chain.reduce((acc, ch) => {
                 if (ch.trigger) {
-                  return [...acc, { ...ch, species: species.name }, ch.species];
+                  return [...acc, {
+                    ...ch, species: species.name,
+                  }, ch.species];
                 }
 
                 return [...acc, ch.species];
@@ -200,7 +230,9 @@ async function Details({ params }: { params: { id: string } }) {
                   );
                 }
 
-                const { pokemon: evolution } = el;
+                const {
+                  pokemon: evolution,
+                } = el;
 
                 return (
                   <div key={evolution.id} className='flex flex-col'>
@@ -216,7 +248,9 @@ async function Details({ params }: { params: { id: string } }) {
                       {evolution.id}
                     </p>
                     <div
-                      style={{ backgroundColor: species.color }}
+                      style={{
+                        backgroundColor: species.color,
+                      }}
                       className='p-[1px] rounded-[0.2rem] text-white text-center font-medium uppercase'
                     >
                       {evolution.name}
