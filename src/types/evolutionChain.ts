@@ -1,5 +1,4 @@
 export type Chain = {
-  evolutionChainId: number;
   id: number;
   isBaby: boolean
   parentId: number | null;
@@ -20,6 +19,7 @@ export type Chain = {
   partySpecies: string | null;
   partyType: string | null;
   relativePhysicalStats: number | null;
+  speciesId: number;
   timeOfDay: string;
   tradeSpecies: string;
   trigger: string;

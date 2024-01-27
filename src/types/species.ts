@@ -1,6 +1,6 @@
 export type Species = {
   id: number;
-  baseHappiness: number;
+  baseHappiness: number | null;
   captureRate: number;
   color: string;
   eggGroups: string[];
@@ -10,11 +10,11 @@ export type Species = {
   growthRate: string;
   habitat: string | null;
   hasGenderDifferences: boolean;
-  hatchCounter: number;
+  hatchCounter: number | null;
   isBaby: boolean;
   isLegendary: boolean;
   isMythical: boolean;
   name: string;
   order: number;
-  shape: string;
+  shape: string | null;
 }

@@ -28,7 +28,7 @@ export const SpeciesSchema = T.Object({
   growth_rate: NameAndUrl,
   habitat: T.Union([NameAndUrl, T.Null()]),
   has_gender_differences: T.Boolean(),
-  hatch_counter: T.Number(),
+  hatch_counter: T.Union([T.Number(), T.Null()]),
   id: T.Number(),
   is_baby: T.Boolean(),
   is_legendary: T.Boolean(),
@@ -40,7 +40,7 @@ export const SpeciesSchema = T.Object({
     entry_number: T.Number(),
     pokedex: NameAndUrl,
   })),
-  shape: NameAndUrl,
+  shape: T.Union([NameAndUrl, T.Null()]),
   varieties: T.Array(T.Object({
     is_default: T.Boolean(),
     pokemon: NameAndUrl,

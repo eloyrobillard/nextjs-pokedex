@@ -220,7 +220,7 @@ async function Details({
               }, [] as (Chain | (Species & { pokemon: PokemonV2}))[]).map(el => {
                 const isChain = (el: Chain | Species): el is Chain => Object.prototype.hasOwnProperty.call(el, 'trigger');
 
-                if (el && isChain(el)) {
+                if (isChain(el)) {
                   // `el` is an object with evolution chain details
                   return (
                     <div key={el.id}>

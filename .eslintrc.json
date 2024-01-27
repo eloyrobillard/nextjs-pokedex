@@ -57,8 +57,12 @@
     "object-curly-newline": [
       "error",
       {
-        "ObjectExpression": "always",
-        "ObjectPattern": "always",
+        "ObjectExpression": {
+          "minProperties": 1
+        },
+        "ObjectPattern": {
+          "minProperties": 1
+        },
         "ImportDeclaration": {
           "consistent": true
         },
@@ -67,6 +71,8 @@
         }
       }
     ],
+    "function-paren-newline": ["error", { "minItems": 3 }],
+    "function-call-argument-newline": ["error", "always"],
     "jsx-quotes": [
       "error",
       "prefer-single"

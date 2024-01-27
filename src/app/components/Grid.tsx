@@ -3,12 +3,10 @@ import Link from 'next/link';
 
 import prismadb from '@/libs/prismadb.ts';
 import Card from '@/app/components/Card.tsx';
-import { populate } from '@/utils/populate.ts';
 
 export default async function Grid({
   query,
 }: { query: string }) {
-  // await populate();
   const pokemonList = await prismadb.pokemon.findMany({
     where: {
       name: {

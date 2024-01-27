@@ -1,13 +1,13 @@
-import { PokemonParser, PokemonSchema } from '@/type-builders/pokemon.ts';
+import { PokemonSchema } from '@/type-builders/pokemon.ts';
 import fetcher from '@/libs/fetcher.ts';
 import { sleep } from '@/utils/sleep.ts';
 import prismadb from '@/libs/prismadb.ts';
 import { Move, PokemonV2 } from '@/types/pokemon.ts';
 import { TypeParser } from '@/type-builders/type.ts';
 import { PokemonType } from '@/types/type.ts';
-import { SpeciesParser, SpeciesSchema } from '@/type-builders/species.ts';
+import { SpeciesSchema } from '@/type-builders/species.ts';
 import { Move as MoveParser } from '@/type-builders/move.ts';
-import { ChainSchema, EvolutionChainParser, EvolutionChainSchema } from '@/type-builders/evolutionChain.ts';
+import { ChainSchema, EvolutionChainSchema } from '@/type-builders/evolutionChain.ts';
 import { Chain, EvolutionChain } from '@/types/evolutionChain.ts';
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 import { Static, Type } from '@sinclair/typebox';
@@ -27,191 +27,6 @@ const parseIdFromUrl = (url: string, def: number = 0) => {
 
   return matches ? Number(matches[1]) : def;
 };
-
-/**
- * Replace current DB data with entirely new data from the PokéAPI.
- * Specify a step to limit the number of 'pokemon' and 'pokemon-species' queries
- * performed at any given time.
- * Then specify a max number of entries. It should be above the actual number of entries
- * present in the APU to make sure we get all entries even if some get added
- * in the future.
- */
-export async function populateWithPokemon(step: number, maxEntries: number) {
-  // start from where we left off
-  const currentData = await prismadb.pokemon.findMany();
-
-  const urls = await fetcher(`https://pokeapi.co/api/v2/pokemon?limit=${maxEntries}`)
-    .then(({
-      results,
-    }) => results.map(({
-      url,
-    }: { url: string }) => url));
-
-  if (!Array.isArray(urls)) {
-    return [];
-  }
-
-  /* eslint-disable no-await-in-loop */
-  for (let i = currentData.length; i < urls.length; i += step) {
-    const pokemonEntries = (await Promise.all(
-      urls.slice(i, i + step).map(fetcher),
-    ))
-      // make sure `this` is PokemonBuilder otherwise this fails
-      .filter(PokemonParser.Check.bind(PokemonParser));
-
-    // promise returns [pokemon, pokemonSpecies] tuples
-    const pokemonAndSpeciesTuples = (
-      await Promise.all(
-        pokemonEntries.map(p => fetcher(p.species.url)
-          .then(s => {
-            if (SpeciesParser.Check(s)) {
-              return [p, s] as const;
-            }
-
-            console.error(SpeciesParser.Errors(s).First());
-            return [];
-          })),
-      )
-    );
-
-    await Promise.all(pokemonAndSpeciesTuples.map(([p, s]) => {
-      // convert to format used in DB
-      const pokemon: PokemonV2 = {
-        id: p.id,
-        abilities: p.abilities.map(({
-          ability,
-        }) => ability.name),
-        baseExperience: p.base_experience,
-        height: p.height,
-        isDefault: p.is_default,
-        name: p.name,
-        order: p.order,
-        sprite: p.sprites.front_default,
-        type1: p.types[0]?.type.name || '',
-        type2: p.types[1]?.type.name || '',
-        weight: p.weight,
-      };
-
-      const species: Species = {
-        id: s.id,
-        baseHappiness: s.base_happiness,
-        captureRate: s.capture_rate,
-        color: s.color.name,
-        eggGroups: s.egg_groups.map(({
-          name,
-        }) => name),
-        evolvesFromSpecies: s.evolves_from_species?.name || null,
-        genderRate: s.gender_rate,
-        generation: s.generation.name,
-        growthRate: s.growth_rate.name,
-        habitat: s.habitat?.name || null,
-        hasGenderDifferences: s.has_gender_differences,
-        hatchCounter: s.hatch_counter,
-        isBaby: s.is_baby,
-        isLegendary: s.is_legendary,
-        isMythical: s.is_mythical,
-        name: s.name,
-        order: s.order,
-        shape: s.shape.name,
-      };
-
-      // forms, genera, names and stats are all related to the current pokemon
-      // we use a transaction to make sure all the relevant data exist together in the DB
-      return prismadb.$transaction([
-        prismadb.pokemon.upsert({
-          where: {
-            id: s.id,
-          },
-          update: {
-          },
-          create: {
-            ...pokemon,
-            forms: {
-              create: p.forms.map(({
-                name, url,
-              }) => ({
-                name, url,
-              })),
-            },
-            gameIndices: {
-              create: p.game_indices.map(({
-                game_index: gameIndex, version,
-              }) => ({
-                gameIndex, version: version.name,
-              })),
-            },
-            stats: {
-              create: p.stats.map(({
-                base_stat: baseStat, effort, stat: {
-                  name,
-                },
-              }) => ({
-                baseStat, effort, name,
-              })),
-            },
-          },
-        }),
-        prismadb.species.upsert({
-          where: {
-            id: s.id,
-          },
-          update: {
-          },
-          create: {
-            ...species,
-            genera: {
-              create: s.genera.map(({
-                genus, language,
-              }) => ({
-                genus, language: language.name,
-              })),
-            },
-            names: {
-              create: s.names.map(({
-                name, language,
-              }) => ({
-                name, language: language.name,
-              })),
-            },
-            pokedexNumbers: {
-              create: s.pokedex_numbers.map(({
-                entry_number: entry, pokedex,
-              }) => ({
-                entry, pokedex: pokedex.name,
-              })),
-            },
-            flavorTextEntries: {
-              create: s.flavor_text_entries.map(({
-                flavor_text: flavorText,
-                language,
-                version,
-              }) => ({
-                flavorText,
-                language: language.name,
-                version: version.name,
-              })),
-            },
-            varieties: {
-              create: s.varieties.map(({
-                is_default: isDefault, pokemon: {
-                  name,
-                },
-              }) => ({
-                isDefault, pokemon: name,
-              })),
-            },
-          },
-        }),
-      ]);
-    }));
-
-    // wait 10 seconds
-    await sleep(10000);
-  }
-
-  // get all updated pokemon entries back
-  return prismadb.pokemon.findMany();
-}
 
 /**
  * Replace current DB data with entirely new data from the PokéAPI.
@@ -238,9 +53,8 @@ export async function populateWithMoves(step: number, maxEntries: number) {
 
   /* eslint-disable no-await-in-loop */
   for (let i = currentData.length; i < urls.length; i += step) {
-    const moveEntries = (await Promise.all(
-      urls.slice(i, i + step).map(fetcher),
-    ))
+    const moveEntries = (await Promise.all(urls.slice(i,
+      i + step).map(fetcher)))
       // make sure `this` is PokemonBuilder otherwise this fails
       .filter(MoveParser.Check.bind(MoveParser));
 
@@ -347,9 +161,8 @@ export async function populateWithTypes(step: number, maxEntries: number) {
 
   /* eslint-disable no-await-in-loop */
   for (let i = currentData.length; i < urls.length; i += step) {
-    const typeEntries = (await Promise.all(
-      urls.slice(i, i + step).map(fetcher),
-    ))
+    const typeEntries = (await Promise.all(urls.slice(i,
+      i + step).map(fetcher)))
       // make sure `this` is PokemonBuilder otherwise this line fails
       .filter(TypeParser.Check.bind(TypeParser));
 
@@ -420,111 +233,48 @@ export async function populateWithTypes(step: number, maxEntries: number) {
   return prismadb.type.findMany();
 }
 
-let id = 0;
-
 // 進化の仕組み：１か２段階、それとも１段階で複数の可能な進化
-function flattenChain(
-  initialChain: Static<typeof ChainSchema>,
-  evolutionChainId: number,
-  parentId: number | null = null,
-): Chain[] {
-  id += 1;
+const flattenChain = (() => {
+  let id = 0;
 
-  const details = initialChain.evolution_details[0];
+  return (initialChain: Static<typeof ChainSchema>,
+    parentId: number | null = null): Chain[] => {
+    id += 1;
 
-  const chain = {
-    evolutionChainId,
-    id,
-    isBaby: initialChain.is_baby,
-    parentId,
-    // evolution details
-    gender: details?.gender || null,
-    heldItem: details?.held_item?.name || null,
-    item: details?.item?.name || null,
-    knownMove: details?.known_move?.name || null,
-    knownMoveType: details?.known_move_type?.name || null,
-    location: details?.location?.name || null,
-    minAffection: details?.min_affection || null,
-    minBeauty: details?.min_beauty || null,
-    minHappiness: details?.min_happiness || null,
-    minLevel: details?.min_level || 0,
-    needsOverworldRain: details?.needs_overworld_rain || false,
-    partySpecies: details?.party_species?.name || null,
-    partyType: details?.party_type?.name || null,
-    relativePhysicalStats: details?.relative_physical_stats || null,
-    timeOfDay: details?.time_of_day || '',
-    tradeSpecies: details?.trade_species?.name || '',
-    trigger: details?.trigger?.name || '',
-    turnUpsideDown: details?.turn_upside_down || false,
+    const details = initialChain.evolution_details[0];
+
+    const chain = {
+      id,
+      isBaby: initialChain.is_baby,
+      parentId,
+      // evolution details
+      gender: details?.gender || null,
+      heldItem: details?.held_item?.name || null,
+      item: details?.item?.name || null,
+      knownMove: details?.known_move?.name || null,
+      knownMoveType: details?.known_move_type?.name || null,
+      location: details?.location?.name || null,
+      minAffection: details?.min_affection || null,
+      minBeauty: details?.min_beauty || null,
+      minHappiness: details?.min_happiness || null,
+      minLevel: details?.min_level || 0,
+      needsOverworldRain: details?.needs_overworld_rain || false,
+      partySpecies: details?.party_species?.name || null,
+      partyType: details?.party_type?.name || null,
+      relativePhysicalStats: details?.relative_physical_stats || null,
+      speciesId: parseIdFromUrl(initialChain.species.url),
+      timeOfDay: details?.time_of_day || '',
+      tradeSpecies: details?.trade_species?.name || '',
+      trigger: details?.trigger?.name || '',
+      turnUpsideDown: details?.turn_upside_down || false,
+    };
+
+    const evolutions = initialChain.evolves_to.flatMap(ch => flattenChain(ch,
+      id));
+
+    return [chain].concat(evolutions);
   };
-
-  const evolutions = initialChain.evolves_to.flatMap(ch => flattenChain(
-    ch,
-    evolutionChainId,
-    id,
-  ));
-
-  return [chain].concat(evolutions);
-}
-
-export async function populateWithEvolutionChains(step: number, maxEntries: number) {
-  // start from where we left off
-  // await prismadb.chain.deleteMany();
-  // await prismadb.evolutionChain.deleteMany();
-  const currentData = await prismadb.evolutionChain.findMany();
-
-  const urls = await fetcher(`https://pokeapi.co/api/v2/evolution-chain?limit=${maxEntries}`)
-    .then(({
-      results,
-    }) => results.map(({
-      url,
-    }: { url: string }) => url));
-
-  if (!Array.isArray(urls)) {
-    return [];
-  }
-
-  /* eslint-disable no-await-in-loop */
-  for (let i = currentData.length; i < urls.length; i += step) {
-    const typeEntries = (await Promise.all(
-      urls.slice(i, i + step).map(fetcher),
-    ))
-      // make sure `this` is PokemonBuilder otherwise this line fails
-      .filter(val => {
-        const firstError = EvolutionChainParser.Errors(val).First();
-
-        if (firstError) {
-          console.error(firstError, val.id);
-        }
-
-        return EvolutionChainParser.Check.bind(EvolutionChainParser, val);
-      });
-
-    await Promise.all(typeEntries.map(ec => {
-      const chains = flattenChain(ec.chain, ec.id).map(e => prismadb.chain.create({
-        data: e,
-      }));
-
-      // convert to format used in DB
-      const evolutionChain: EvolutionChain = {
-        id: ec.id,
-      };
-
-      return prismadb.$transaction([
-        prismadb.evolutionChain.create({
-          data: evolutionChain,
-        }),
-        ...chains,
-      ]);
-    }));
-
-    // wait 10 seconds
-    await sleep(10000);
-  }
-
-  // get all updated pokemon entries back
-  return prismadb.evolutionChain.findMany();
-}
+})();
 
 export function transformPokemonList() {
   const PokemonListParser = TypeCompiler.Compile(Type.Array(PokemonSchema));
@@ -669,7 +419,7 @@ export function transformSpeciesList() {
         isMythical,
         name,
         order,
-        shape: shape.name,
+        shape: shape?.name || null,
       };
 
       return {
@@ -776,16 +526,19 @@ export function transformEvolutionChainList() {
 
   if (EvolutionChainListParser.Check(evolutionChainData)) {
     return evolutionChainData.map(({
-      id, chain,
+      id,
+      chain,
     }) => {
-      const chains = flattenChain(chain, id);
+      const chains = flattenChain(chain,
+        id);
 
       const evolutionChain: EvolutionChain = {
         id,
       };
 
       return {
-        evolutionChain, chains,
+        evolutionChain,
+        chains,
       };
     });
   }
@@ -799,7 +552,8 @@ const prismaifyEvolutionChainList = (list: {
   evolutionChain: EvolutionChain;
   chains: Chain[];
 }[]) => list.map(({
-  evolutionChain, chains,
+  evolutionChain,
+  chains,
 }) => ({
   ...evolutionChain,
   chain: {
@@ -807,30 +561,52 @@ const prismaifyEvolutionChainList = (list: {
   },
 }));
 
-export const populate = async () => {
-  const pokemonList = transformPokemonList();
-  // const evolutionChainList = transformEvolutionChainList();
-  // const speciesList = transformSpeciesList();
+const populate = async <T, U extends { [key: string]: unknown, id: number }>(
+  getList: () => T[],
+  prismaify: (tl: T[]) => U[],
+  storeToDB: (u: U) => void,
+) => {
+  const list = getList();
+  const prismaList = prismaify(list);
 
-  const prismaReadyPokemonList = prismaifyPokemonList(pokemonList);
-  // const prismaReadyEvolutionChainList = prismaifyEvolutionChainList(evolutionChainList);
-  // const prismaReadySpeciesList = prismaifySpeciesList(speciesList);
-
-  for (const pk of prismaReadyPokemonList) {
-    await prismadb.pokemon.upsert({
-      where: {
-        id: pk.id,
-      },
-      update: {},
-      create: pk,
-    });
+  // eslint-disable-next-line no-restricted-syntax
+  for (const el of prismaList) {
+    await storeToDB(el);
   }
-
-  // await prismadb.species.createMany({
-  //   data: prismaReadySpeciesList,
-  // });
-
-  // await prismadb.evolutionChain.createMany({
-  //   data: prismaReadyEvolutionChainList,
-  // });
 };
+
+export const populateWithPokemon = populate(
+  transformPokemonList,
+  prismaifyPokemonList,
+  el => prismadb.pokemon.upsert({
+    where: {
+      id: el.id,
+    },
+    update: {},
+    create: el,
+  }),
+);
+
+export const populateWithSpecies = populate(
+  transformSpeciesList,
+  prismaifySpeciesList,
+  el => prismadb.species.upsert({
+    where: {
+      id: el.id,
+    },
+    update: {},
+    create: el,
+  }),
+);
+
+export const populateWithEvolutionChain = populate(
+  transformEvolutionChainList,
+  prismaifyEvolutionChainList,
+  el => prismadb.evolutionChain.upsert({
+    where: {
+      id: el.id,
+    },
+    update: {},
+    create: el,
+  }),
+);

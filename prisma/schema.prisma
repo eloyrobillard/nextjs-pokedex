@@ -66,7 +66,7 @@ model Species {
   color                String
   eggGroups            String[]
   evolutionChain       EvolutionChain           @relation(fields: [evolutionChainId], references: [id])
-  evolutionChainId     Int                      @unique
+  evolutionChainId     Int
   evolvesFromSpecies   String?
   flavorTextEntries    SpeciesFlavorTextEntry[]
   genderRate           Int
@@ -85,7 +85,7 @@ model Species {
   pokemon              Pokemon                  @relation(fields: [pokemonId], references: [id])
   pokemonId            Int                      @unique
   pokedexNumbers       PokedexEntry[]
-  shape                String
+  shape                String?
   varieties            Variety[]
 }
 
@@ -121,9 +121,9 @@ model Variety {
 // just an id for the chain, the real data is in the Chain children
 // kept it because the id is given by PokéAPI, so it's stable / meaningful
 model EvolutionChain {
-  id      Int      @id
+  id      Int      @id @unique
   chain   Chain[]
-  Species Species?
+  species Species[]
 }
 
 // actual contents of the evolution chain
