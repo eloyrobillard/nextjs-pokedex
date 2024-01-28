@@ -18,10 +18,6 @@ import evolutionChainData from '@/api-data/evolution-chain.json';
 import { Species } from '@/types/species.ts';
 import { Prisma } from '@prisma/client';
 
-// ===================
-// POKEMON
-// ===================
-
 const parseIdFromUrl = (url: string, def: number = 0) => {
   const matches = url.match(/(\d+)\/?$/);
 
@@ -247,26 +243,28 @@ const flattenChain = (() => {
       id,
       isBaby: initialChain.is_baby,
       parentId,
-      // evolution details
-      gender: details?.gender || null,
-      heldItem: details?.held_item?.name || null,
-      item: details?.item?.name || null,
-      knownMove: details?.known_move?.name || null,
-      knownMoveType: details?.known_move_type?.name || null,
-      location: details?.location?.name || null,
-      minAffection: details?.min_affection || null,
-      minBeauty: details?.min_beauty || null,
-      minHappiness: details?.min_happiness || null,
-      minLevel: details?.min_level || 0,
-      needsOverworldRain: details?.needs_overworld_rain || false,
-      partySpecies: details?.party_species?.name || null,
-      partyType: details?.party_type?.name || null,
-      relativePhysicalStats: details?.relative_physical_stats || null,
       speciesId: parseIdFromUrl(initialChain.species.url),
-      timeOfDay: details?.time_of_day || '',
-      tradeSpecies: details?.trade_species?.name || '',
       trigger: details?.trigger?.name || '',
-      turnUpsideDown: details?.turn_upside_down || false,
+      // evolution details
+      evolutionDetails: {
+        gender: details?.gender || null,
+        heldItem: details?.held_item?.name || null,
+        item: details?.item?.name || null,
+        knownMove: details?.known_move?.name || null,
+        knownMoveType: details?.known_move_type?.name || null,
+        location: details?.location?.name || null,
+        minAffection: details?.min_affection || null,
+        minBeauty: details?.min_beauty || null,
+        minHappiness: details?.min_happiness || null,
+        minLevel: details?.min_level || null,
+        needsOverworldRain: details?.needs_overworld_rain || false,
+        partySpecies: details?.party_species?.name || null,
+        partyType: details?.party_type?.name || null,
+        relativePhysicalStats: details?.relative_physical_stats || null,
+        timeOfDay: details?.time_of_day || null,
+        tradeSpecies: details?.trade_species?.name || null,
+        turnUpsideDown: details?.turn_upside_down || false,
+      },
     };
 
     const evolutions = initialChain.evolves_to.flatMap(ch => flattenChain(ch,
@@ -557,7 +555,12 @@ const prismaifyEvolutionChainList = (list: {
 }) => ({
   ...evolutionChain,
   chain: {
-    create: chains,
+    create: chains.map(ch => ({
+      ...ch,
+      evolutionDetails: {
+        create: ch.evolutionDetails,
+      },
+    })),
   },
 }));
 
@@ -575,7 +578,7 @@ const populate = async <T, U extends { [key: string]: unknown, id: number }>(
   }
 };
 
-export const populateWithPokemon = populate(
+export const populateWithPokemon = () => populate(
   transformPokemonList,
   prismaifyPokemonList,
   el => prismadb.pokemon.upsert({
@@ -587,7 +590,7 @@ export const populateWithPokemon = populate(
   }),
 );
 
-export const populateWithSpecies = populate(
+export const populateWithSpecies = () => populate(
   transformSpeciesList,
   prismaifySpeciesList,
   el => prismadb.species.upsert({
@@ -599,14 +602,16 @@ export const populateWithSpecies = populate(
   }),
 );
 
-export const populateWithEvolutionChain = populate(
+export const populateWithEvolutionChain = () => populate(
   transformEvolutionChainList,
   prismaifyEvolutionChainList,
   el => prismadb.evolutionChain.upsert({
     where: {
       id: el.id,
     },
-    update: {},
+    update: {
+      chain: el.chain,
+    },
     create: el,
   }),
 );

@@ -5,19 +5,45 @@ import LongIcon from '@/components/LongIcon.tsx';
 import Gauge from '@/app/components/Gauge.tsx';
 import PokedexEntries from '@/app/components/PokedexEntries.tsx';
 import Icon from '@/components/Icon.tsx';
-import { Chain } from '@/types/evolutionChain.ts';
+import { Chain, EvolutionDetails } from '@/types/evolutionChain.ts';
 import { PokemonV2 } from '@/types/pokemon.ts';
 
 // used for perspective effect
 import './style.css';
 import { Species } from '@/types/species.ts';
 
-const getEvolutionTrigger = (ev: Chain) => {
-  if (ev.minLevel) {
-    return `Level ${ev.minLevel}+`;
-  }
+const capitalizeHyphenatedName = (s: string | number | boolean | null) => (typeof s === 'string'
+  ? s.split('-').map(s => s.replace(/\b\w/, c => c.toLocaleUpperCase())).join(' ')
+  : s
+);
 
-  return '<trigger not implemented yet>';
+const getEvolutionTrigger = (trigger: string, details: EvolutionDetails) => {
+  switch (trigger) {
+    case 'use-item':
+      return `Use ${capitalizeHyphenatedName(details.item)}`;
+    case 'level-up': {
+      const triggers = Object.entries(details).reduce((acc, [key, val]) => {
+        switch (key) {
+          case 'location':
+            return val ? [...acc, `at ${capitalizeHyphenatedName(val)}`] : acc;
+          case 'minAffection':
+            return val ? [...acc, `with ${capitalizeHyphenatedName(val)}+ Affection`] : acc;
+          case 'minBeauty':
+            return val ? [...acc, `with ${capitalizeHyphenatedName(val)}+ Beauty`] : acc;
+          case 'minHappiness':
+            return val ? [...acc, `with ${capitalizeHyphenatedName(val)}+ Happiness`] : acc;
+          default:
+            return acc;
+        }
+      }, [] as string[]);
+      if (details.minLevel) {
+        return `Level ${details.minLevel}+`;
+      }
+      return `Level up ${triggers.join(' ')}`;
+    }
+    default:
+      return '<trigger not implemented yet>';
+  }
 };
 
 const getData = async (id: number) => {
@@ -36,6 +62,7 @@ const getData = async (id: number) => {
                   pokemon: true,
                 },
               },
+              evolutionDetails: true,
             },
           },
         },
@@ -212,19 +239,21 @@ async function Details({
               {evolutionChain.chain.reduce((acc, ch) => {
                 if (ch.trigger) {
                   return [...acc, {
-                    ...ch, species: species.name,
+                    ...ch,
+                    evolutionDetails: ch.evolutionDetails!,
+                    species: species.name,
                   }, ch.species];
                 }
 
                 return [...acc, ch.species];
-              }, [] as (Chain | (Species & { pokemon: PokemonV2}))[]).map(el => {
+              }, [] as (Chain | (Species & { pokemon: PokemonV2 }))[]).map(el => {
                 const isChain = (el: Chain | Species): el is Chain => Object.prototype.hasOwnProperty.call(el, 'trigger');
 
                 if (isChain(el)) {
                   // `el` is an object with evolution chain details
                   return (
                     <div key={el.id}>
-                      <p>{getEvolutionTrigger(el)}</p>
+                      <p>{getEvolutionTrigger(el.trigger, el.evolutionDetails)}</p>
                       <Image src='/right-arrow.png' alt='right arrow' width={50} height={50} />
                     </div>
                   );

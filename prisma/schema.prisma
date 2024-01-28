@@ -121,7 +121,7 @@ model Variety {
 // just an id for the chain, the real data is in the Chain children
 // kept it because the id is given by PokéAPI, so it's stable / meaningful
 model EvolutionChain {
-  id      Int      @id @unique
+  id      Int       @id @unique
   chain   Chain[]
   species Species[]
 }
@@ -129,18 +129,23 @@ model EvolutionChain {
 // actual contents of the evolution chain
 // example of a recursive model
 model Chain {
-  id                    Int            @id @unique
-  evolutionChain        EvolutionChain @relation(fields: [evolutionChainId], references: [id])
-  evolutionChainId      Int
-  evolvesTo             Chain[]        @relation("parentId")
-  isBaby                Boolean
-  parent                Chain?         @relation("parentId", fields: [parentId], references: [id])
-  parentId              Int?
-  species               Species        @relation(fields: [speciesId], references: [id])
-  speciesId             Int            @unique
-  // from `evolutionDetails` field
-  // NOTE this field comes as an array from PokéAPI
-  //      so there may be chains with several `evolutionDetails` items (haven't found one thus far)
+  id               Int               @id @unique
+  evolutionChain   EvolutionChain    @relation(fields: [evolutionChainId], references: [id])
+  evolutionChainId Int
+  evolvesTo        Chain[]           @relation("parentId")
+  isBaby           Boolean
+  parent           Chain?            @relation("parentId", fields: [parentId], references: [id])
+  parentId         Int?
+  species          Species           @relation(fields: [speciesId], references: [id])
+  speciesId        Int               @unique
+  trigger          String
+  evolutionDetails EvolutionDetails?
+}
+
+model EvolutionDetails {
+  id                    Int     @id @default(autoincrement())
+  chain                 Chain   @relation(fields: [chainId], references: [id])
+  chainId               Int     @unique
   gender                Int?
   heldItem              String?
   item                  String?
@@ -150,14 +155,13 @@ model Chain {
   minAffection          Int?
   minBeauty             Int?
   minHappiness          Int?
-  minLevel              Int
+  minLevel              Int?
   needsOverworldRain    Boolean
   partySpecies          String?
   partyType             String?
   relativePhysicalStats Int?
-  timeOfDay             String
-  tradeSpecies          String
-  trigger               String
+  timeOfDay             String?
+  tradeSpecies          String?
   turnUpsideDown        Boolean
 }
 
