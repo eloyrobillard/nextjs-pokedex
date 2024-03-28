@@ -1,3 +1,38 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1016928c400b27f8dd9c2d02ef0ced5c1d2f525fa55dbc9be21088c6b1635cfe
-size 983
+{
+  "name": "next-user-input",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.8.1",
+    "@sinclair/typebox": "^0.32.3",
+    "axios": "^1.6.3",
+    "next": "14.0.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "swr": "^2.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.46",
+    "@typescript-eslint/eslint-plugin": "^6.16.0",
+    "@typescript-eslint/parser": "^6.16.0",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8.56.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-next": "14.0.4",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "postcss": "^8",
+    "prisma": "^5.8.1",
+    "tailwindcss": "^3.3.0",
+    "ts-node": "^10.9.2",
+    "typescript-eslint": "^0.0.1-alpha.0"
+  }
+}
